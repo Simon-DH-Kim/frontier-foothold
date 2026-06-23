@@ -44,6 +44,7 @@
   .opts{display:flex;flex-wrap:wrap;gap:8px}
   .opt{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;transition:.12s;font-family:inherit;text-align:left}
   .opt small{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);font-weight:400;margin-top:1px}
+  .opt-main{display:block}
   .opt:hover{border-color:var(--copper)}
   .opt.sel{border-color:var(--ink);background:var(--ink);color:#fff}
   .opt.sel small{color:rgba(255,255,255,.6)}
@@ -316,8 +317,8 @@
         <label class="remember-row"><input type="checkbox" id="rememberKey"> <span>이 브라우저에 키 기억하기 <b>(개인 컴퓨터에서만 권장)</b></span></label>
         <div class="model-row">
           <span>모델</span>
-          <input type="text" id="modelName" value="gemini-2.5-flash-lite">
-          <span style="font-size:11px">무료 모델: gemini-2.5-flash-lite · gemini-2.5-flash · gemini-3-flash</span>
+          <input type="text" id="modelName" value="gemini-flash-lite-latest">
+          <span style="font-size:11px">무료 모델: gemini-flash-lite-latest · gemini-flash-latest · gemini-2.5-flash</span>
         </div>
         <div class="key-status no" id="keyStatus">키가 입력되지 않았습니다.</div>
       </div>
@@ -327,13 +328,13 @@
     <div class="field">
       <div class="field-label"><span class="n">A</span><h3 data-ko="산업" data-en="Industry">산업</h3><span class="req" data-ko="필수" data-en="required">필수</span><span class="desc" data-ko="용어와 관점을 결정" data-en="sets vocabulary & lens">용어와 관점을 결정</span></div>
       <div class="opts" id="industryOpts">
-        <button class="opt sel" data-v="반도체">반도체<small>Semiconductor</small></button>
-        <button class="opt" data-v="엔터프라이즈 SW">엔터프라이즈 SW<small>Enterprise SW</small></button>
-        <button class="opt" data-v="자동차">자동차<small>Automotive</small></button>
-        <button class="opt" data-v="의료기기">의료기기<small>Medical Devices</small></button>
-        <button class="opt" data-v="제약·바이오">제약·바이오<small>Pharma & Bio</small></button>
-        <button class="opt" data-v="에너지·신재생">에너지·신재생<small>Energy</small></button>
-        <button class="opt" data-v="소비재·유통">소비재·유통<small>Consumer Goods</small></button>
+        <button class="opt sel" data-v="반도체"><span class="opt-main" data-ko="반도체" data-en="Semiconductor">반도체</span><small data-ko="Semiconductor" data-en="반도체">Semiconductor</small></button>
+        <button class="opt" data-v="엔터프라이즈 SW"><span class="opt-main" data-ko="엔터프라이즈 SW" data-en="Enterprise SW">엔터프라이즈 SW</span><small data-ko="Enterprise SW" data-en="엔터프라이즈 SW">Enterprise SW</small></button>
+        <button class="opt" data-v="자동차"><span class="opt-main" data-ko="자동차" data-en="Automotive">자동차</span><small data-ko="Automotive" data-en="자동차">Automotive</small></button>
+        <button class="opt" data-v="의료기기"><span class="opt-main" data-ko="의료기기" data-en="Medical Devices">의료기기</span><small data-ko="Medical Devices" data-en="의료기기">Medical Devices</small></button>
+        <button class="opt" data-v="제약·바이오"><span class="opt-main" data-ko="제약·바이오" data-en="Pharma & Bio">제약·바이오</span><small data-ko="Pharma & Bio" data-en="제약·바이오">Pharma & Bio</small></button>
+        <button class="opt" data-v="에너지·신재생"><span class="opt-main" data-ko="에너지·신재생" data-en="Energy">에너지·신재생</span><small data-ko="Energy" data-en="에너지·신재생">Energy</small></button>
+        <button class="opt" data-v="소비재·유통"><span class="opt-main" data-ko="소비재·유통" data-en="Consumer Goods">소비재·유통</span><small data-ko="Consumer Goods" data-en="소비재·유통">Consumer Goods</small></button>
       </div>
     </div>
 
@@ -341,15 +342,15 @@
     <div class="field">
       <div class="field-label"><span class="n">B</span><h3 data-ko="시장" data-en="Market">시장</h3><span class="req" data-ko="필수" data-en="required">필수</span><span class="desc" data-ko="권역 또는 국가" data-en="region or country">권역 또는 국가</span></div>
       <div class="opts" id="marketOpts">
-        <button class="opt" data-v="북미" data-depth="deep">북미<small>North America</small></button>
-        <button class="opt" data-v="유럽" data-depth="deep">유럽<small>Europe</small></button>
-        <button class="opt sel" data-v="중동·북아프리카(MENA)" data-depth="deep">중동·북아프리카<small>MENA</small></button>
-        <button class="opt" data-v="한국" data-depth="deep">한국<small>Korea</small></button>
-        <button class="opt" data-v="동아시아·동남아" data-depth="deep">동아시아·동남아<small>East/SE Asia</small></button>
-        <button class="opt" data-v="중남미" data-depth="shallow">중남미<small>Latin America</small></button>
-        <button class="opt" data-v="사하라이남 아프리카" data-depth="shallow">사하라이남 아프리카<small>Sub-Saharan Africa</small></button>
-        <button class="opt" data-v="남아시아" data-depth="shallow">남아시아<small>South Asia</small></button>
-        <button class="opt" data-v="오세아니아" data-depth="shallow">오세아니아<small>Oceania</small></button>
+        <button class="opt" data-v="북미" data-depth="deep"><span class="opt-main" data-ko="북미" data-en="North America">북미</span><small data-ko="North America" data-en="북미">North America</small></button>
+        <button class="opt" data-v="유럽" data-depth="deep"><span class="opt-main" data-ko="유럽" data-en="Europe">유럽</span><small data-ko="Europe" data-en="유럽">Europe</small></button>
+        <button class="opt sel" data-v="중동·북아프리카(MENA)" data-depth="deep"><span class="opt-main" data-ko="중동·북아프리카" data-en="MENA">중동·북아프리카</span><small data-ko="MENA" data-en="중동·북아프리카">MENA</small></button>
+        <button class="opt" data-v="한국" data-depth="deep"><span class="opt-main" data-ko="한국" data-en="Korea">한국</span><small data-ko="Korea" data-en="한국">Korea</small></button>
+        <button class="opt" data-v="동아시아·동남아" data-depth="deep"><span class="opt-main" data-ko="동아시아·동남아" data-en="East/SE Asia">동아시아·동남아</span><small data-ko="East/SE Asia" data-en="동아시아·동남아">East/SE Asia</small></button>
+        <button class="opt" data-v="중남미" data-depth="shallow"><span class="opt-main" data-ko="중남미" data-en="Latin America">중남미</span><small data-ko="Latin America" data-en="중남미">Latin America</small></button>
+        <button class="opt" data-v="사하라이남 아프리카" data-depth="shallow"><span class="opt-main" data-ko="사하라이남 아프리카" data-en="Sub-Saharan Africa">사하라이남 아프리카</span><small data-ko="Sub-Saharan Africa" data-en="사하라이남 아프리카">Sub-Saharan Africa</small></button>
+        <button class="opt" data-v="남아시아" data-depth="shallow"><span class="opt-main" data-ko="남아시아" data-en="South Asia">남아시아</span><small data-ko="South Asia" data-en="남아시아">South Asia</small></button>
+        <button class="opt" data-v="오세아니아" data-depth="shallow"><span class="opt-main" data-ko="오세아니아" data-en="Oceania">오세아니아</span><small data-ko="Oceania" data-en="오세아니아">Oceania</small></button>
       </div>
       <div class="inp" style="margin-top:8px">
         <input type="text" id="countryInput" placeholder="또는 특정 국가 입력 — 예: 사우디아라비아, 베트남…">
@@ -490,6 +491,13 @@
 var STATE = { industry:'반도체', market:'중동·북아프리카(MENA)', depth:'deep', entry:'신규 진입', focus:'', lang:'ko', method:'ai', userData:'' };
 var RESULTS = { ko:null, en:null }; // cached AI results per language
 var LAST_LENS = null;
+/* English labels for selected state values (chips, report, foot) */
+var IND_EN={'반도체':'Semiconductor','엔터프라이즈 SW':'Enterprise SW','자동차':'Automotive','의료기기':'Medical Devices','제약·바이오':'Pharma & Bio','에너지·신재생':'Energy','소비재·유통':'Consumer Goods'};
+var MKT_EN={'북미':'North America','유럽':'Europe','중동·북아프리카(MENA)':'MENA','한국':'Korea','동아시아·동남아':'East/SE Asia','중남미':'Latin America','사하라이남 아프리카':'Sub-Saharan Africa','남아시아':'South Asia','오세아니아':'Oceania'};
+var ENTRY_EN={'신규 진입':'New entry','기존 확장':'Expansion'};
+function labInd(){return STATE.lang==='en'?(IND_EN[STATE.industry]||STATE.industry):STATE.industry;}
+function labMkt(){return STATE.lang==='en'?(MKT_EN[STATE.market]||STATE.market):STATE.market;}
+function labEntry(){return STATE.lang==='en'?(ENTRY_EN[STATE.entry]||STATE.entry):STATE.entry;}
 function curResult(){ return RESULTS[STATE.lang] || RESULTS.ko || RESULTS.en; }
 function anyResult(){ return RESULTS.ko || RESULTS.en; }
 
@@ -624,9 +632,9 @@ function toggleKeyCard(){ var c=$('keyCard').classList.toggle('collapsed'); $('k
 function updateDepth(){var d=$('depthInd');var deep=(STATE.depth==='deep');
   d.className='depth '+(deep?'deep':'shallow');
   d.querySelector('span:last-child').textContent = deep
-    ? STATE.market+' · '+T('심층 레퍼런스 있음 (직접 큐레이션)','deep reference available (curated)')
-    : STATE.market+' · '+T('추론 비중 높음 (AI 일반 지식 기반)','mostly inference (AI general knowledge)');}
-function updateFoot(){$('footHint').textContent=STATE.industry+' · '+STATE.market+' · '+STATE.entry+' — '+T('AI 호출 1회로 생성','one AI call');}
+    ? labMkt()+' · '+T('심층 레퍼런스 있음 (직접 큐레이션)','deep reference available (curated)')
+    : labMkt()+' · '+T('추론 비중 높음 (AI 일반 지식 기반)','mostly inference (AI general knowledge)');}
+function updateFoot(){$('footHint').textContent=labInd()+' · '+labMkt()+' · '+labEntry()+' — '+T('AI 호출 1회로 생성','one AI call');}
 
 /* ---- prompt builder (embeds all our principles) ---- */
 function buildPrompt(){
@@ -660,7 +668,7 @@ iref,
 "6. 이 분석에 등장하는 전문용어 6~10개를 glossary에 한 줄 정의로 정리(비전문가도 이해하게).",
 "7. 사용자가 업로드한 데이터가 있으면, 매출·정량 추정과 시장 판단을 그 데이터에 우선 근거하고 evidence에 '사용자 업로드 데이터 기반'으로 표기. 데이터가 부족한 부분만 추론으로 보완.",
 "",
-"[출력 형식 — 반드시 아래 JSON만 출력. 마크다운·설명·코드펜스 금지. "+(STATE.lang==='en'?'ALL text values must be written in natural English.':'모든 텍스트는 한국어로 작성.')+"]",
+"[출력 형식 — 반드시 아래 JSON만 출력. 마크다운·설명·코드펜스 금지. "+(STATE.lang==='en'?"ALL text values — including every short label such as the lens point tag (\"k\") and the to-do category (\"area\") — must be written in natural English. Do NOT leave any value in Korean.":"모든 텍스트 값(짧은 태그 \"k\", 구분 \"area\" 포함)은 반드시 한국어로 작성.")+"]",
 "{",
 '  "conclusion": {',
 '    "attractiveness": "5단계 등급 라벨 (한국어면: 높음/조건부 높음/중간/조건부 낮음/낮음, 영어면: High/Conditionally High/Moderate/Conditionally Low/Low)",',
@@ -692,11 +700,13 @@ iref,
 }
 
 /* ---- Gemini call ---- */
-async function runAnalysis(isRelang){
+var FALLBACK_MODELS=['gemini-flash-lite-latest','gemini-flash-latest','gemini-2.5-flash','gemini-2.5-flash-lite'];
+async function runAnalysis(isRelang, modelOverride, triedList){
   var key=$('apiKey').value.trim();
-  var model=$('modelName').value.trim()||'gemini-2.5-flash';
+  var model=modelOverride || $('modelName').value.trim()||'gemini-flash-lite-latest';
+  triedList=triedList||[];
   $('errSlot').innerHTML='';
-  if(key.length<10){ showError('API 키가 필요합니다','위의 키 입력란에 무료 Gemini API 키를 붙여넣어 주세요. Google AI Studio에서 무료로 발급받을 수 있습니다.',''); return; }
+  if(key.length<10){ showError(T('API 키가 필요합니다','API key required'),T('위의 키 입력란에 무료 Gemini API 키를 붙여넣어 주세요. Google AI Studio에서 무료로 발급받습니다.','Paste a free Gemini API key above. Get one free at Google AI Studio.'),''); return; }
 
   show('s-loading');
   var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
@@ -706,9 +716,15 @@ async function runAnalysis(isRelang){
     var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!res.ok){
       var t=await res.text();
+      // 404 = model name not found → auto-try next known-good model
+      if(res.status===404){
+        triedList.push(model);
+        var next=FALLBACK_MODELS.filter(function(m){return triedList.indexOf(m)<0;})[0];
+        if(next){ $('modelName').value=next; return runAnalysis(isRelang,next,triedList); }
+      }
       var msg=(res.status===429)
-        ? T('무료 사용 한도를 잠시 초과했습니다. 1~2분 뒤 다시 시도하거나 모델을 gemini-2.5-flash-lite로 두세요.','Free quota exceeded for now. Try again in 1–2 min, or use gemini-2.5-flash-lite.')
-        : T('키가 올바른지, 모델 이름이 맞는지 확인하세요. 무료 모델: gemini-2.5-flash-lite / gemini-2.5-flash / gemini-3-flash.','Check your key and model name. Free models: gemini-2.5-flash-lite / gemini-2.5-flash / gemini-3-flash.');
+        ? T('무료 사용 한도를 초과했습니다. 모델을 다른 것으로 바꾸거나, 한국시간 오후 5시 이후(태평양 자정 리셋)에 다시 시도하세요.','Free quota exceeded. Switch models, or retry after the daily reset (midnight Pacific time).')
+        : T('키와 모델 이름을 확인하세요. 작동 확인된 모델: gemini-flash-lite-latest / gemini-flash-latest / gemini-2.5-flash.','Check your key and model. Known-good models: gemini-flash-lite-latest / gemini-flash-latest / gemini-2.5-flash.');
       if(isRelang){ failRelang(T('AI 호출 실패','AI call failed')+' (HTTP '+res.status+') — '+msg); }
       else { show('s-setup'); showError(T('AI 호출 실패','AI call failed')+' (HTTP '+res.status+')', msg, t.slice(0,300)); }
       return;
@@ -788,9 +804,9 @@ function renderCtx(){
   var deep=(STATE.depth==='deep');
   $('ctxBar').innerHTML =
     '<button class="back" onclick="show(\'s-setup\')">← '+T('설정','Setup')+'</button>'+
-    '<span class="ctx-chip"><b>'+T('산업','Industry')+'</b> '+escapeHtml(STATE.industry)+'</span>'+
-    '<span class="ctx-chip"><b>'+T('시장','Market')+'</b> '+escapeHtml(STATE.market)+'</span>'+
-    '<span class="ctx-chip"><b>'+T('유형','Type')+'</b> '+escapeHtml(STATE.entry)+'</span>'+
+    '<span class="ctx-chip"><b>'+T('산업','Industry')+'</b> '+escapeHtml(labInd())+'</span>'+
+    '<span class="ctx-chip"><b>'+T('시장','Market')+'</b> '+escapeHtml(labMkt())+'</span>'+
+    '<span class="ctx-chip"><b>'+T('유형','Type')+'</b> '+escapeHtml(labEntry())+'</span>'+
     (STATE.focus?'<span class="ctx-chip"><b>'+T('공략','Focus')+'</b> '+escapeHtml(STATE.focus)+'</span>':'')+
     '<span class="ctx-spacer"></span>'+
     '<button class="gloss-btn" onclick="openGlossary()">📖 '+T('용어집','Glossary')+'</button>'+
@@ -955,7 +971,7 @@ function buildReport(){
   var todoRows=todos.map(function(t){return '<tr><td>'+escapeHtml(t.area||'')+'</td><td>'+escapeHtml(t.title||'')+'</td><td>'+escapeHtml(t.priority||'')+'</td><td>'+escapeHtml(t.duration||'')+'</td></tr>';}).join('');
   $('reportSlot').innerHTML=
     '<h1>'+T('시장 진입 분석 리포트','Market-Entry Analysis Report')+'</h1>'+
-    '<div class="r-meta">'+escapeHtml(STATE.industry)+' · '+escapeHtml(STATE.market)+' · '+escapeHtml(STATE.entry)+(STATE.focus?(' · '+escapeHtml(STATE.focus)):'')+' &nbsp;|&nbsp; '+dateStr+' &nbsp;|&nbsp; Frontier Foothold</div>'+
+    '<div class="r-meta">'+escapeHtml(labInd())+' · '+escapeHtml(labMkt())+' · '+escapeHtml(labEntry())+(STATE.focus?(' · '+escapeHtml(STATE.focus)):'')+' &nbsp;|&nbsp; '+dateStr+' &nbsp;|&nbsp; Frontier Foothold</div>'+
     '<h2>'+T('1. 종합 결론','1. Conclusion')+'</h2>'+
     '<div class="r-verdict"><div class="rv-s">'+escapeHtml(c.attractiveness||'중간')+'</div>'+
       '<div class="rv-t"><b>'+stripBold(c.recommendation||'')+'</b><p>'+stripBold(c.rationale||'')+'</p></div></div>'+
