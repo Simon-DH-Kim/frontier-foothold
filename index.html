@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frontier Foothold · AI 연동판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A2230; --ink-soft:#4A5568; --paper:#FBFAF7; --panel:#FFFFFF;
+    --line:#E4E0D8; --line-soft:#EFECE5;
+    --copper:#A65A2E; --signal:#2E6E66; --signal-soft:#E6F0EE; --warn:#C58A3D;
+    --shadow:0 1px 2px rgba(26,34,48,.04),0 8px 24px -16px rgba(26,34,48,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px}
+  .serif{font-family:'Spectral',serif}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .screen{display:none}
+  .screen.active{display:block;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--copper)}
+
+  /* top brand bar */
+  .brand{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:26px}
+  .brand .logo{font-family:'Spectral',serif;font-weight:600;font-size:18px;letter-spacing:-.01em}
+  .brand .logo small{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--copper);letter-spacing:.1em;display:block;text-transform:uppercase;margin-top:1px}
+  .brand .tag{font-size:11px;color:var(--ink-soft)}
+
+  h1.serif{font-size:27px;font-weight:600;letter-spacing:-.02em;margin-bottom:8px}
+  .sub{font-size:14.5px;color:var(--ink-soft);max-width:600px}
+
+  /* setup */
+  .field{margin-top:24px}
+  .field-label{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+  .field-label .n{width:20px;height:20px;border-radius:5px;background:var(--ink);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;display:grid;place-items:center}
+  .field-label h3{font-size:14.5px;font-weight:600}
+  .field-label .req{font-size:9.5px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--copper);background:#F6EBE3;border-radius:4px;padding:2px 6px}
+  .field-label .optn{font-size:9.5px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);background:var(--line-soft);border-radius:4px;padding:2px 6px}
+  .field-label .desc{font-size:12.5px;color:var(--ink-soft)}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:500;color:var(--ink);cursor:pointer;transition:.12s;font-family:inherit;text-align:left}
+  .opt small{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);font-weight:400;margin-top:1px}
+  .opt:hover{border-color:var(--copper)}
+  .opt.sel{border-color:var(--ink);background:var(--ink);color:#fff}
+  .opt.sel small{color:rgba(255,255,255,.6)}
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mode{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:13px 15px;cursor:pointer;transition:.12s;font-family:inherit;text-align:left}
+  .mode:hover{border-color:var(--copper)}
+  .mode.sel{border-color:var(--signal);background:var(--signal-soft)}
+  .mode b{display:block;font-size:13.5px;margin-bottom:3px}
+  .mode span{font-size:12.5px;color:var(--ink-soft);line-height:1.45}
+  input[type=text],input[type=password]{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 13px;font-size:13.5px;font-family:inherit;background:var(--panel)}
+  input:focus{outline:none;border-color:var(--copper)}
+  .inp .hint{font-size:12.5px;color:var(--ink-soft);margin-top:7px;line-height:1.5}
+  .depth{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;margin-top:10px;font-family:'IBM Plex Mono',monospace}
+  .depth .d{width:7px;height:7px;border-radius:50%}
+  .depth.deep{color:var(--signal)} .depth.deep .d{background:var(--signal)}
+  .depth.shallow{color:var(--warn)} .depth.shallow .d{background:var(--warn)}
+
+  /* API key card */
+  .key-card{background:#FCF8F3;border:1px solid var(--copper);border-radius:12px;padding:18px;margin-top:22px}
+  .key-card .kt{font-size:13px;font-weight:600;color:var(--copper);margin-bottom:6px}
+  .key-card .kt{display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:6px}
+  .key-toggle{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:var(--copper)}
+  .key-collapsed{display:none;font-size:12.5px;color:var(--signal);font-weight:500}
+  .key-collapsed .key-edit{color:var(--copper);cursor:pointer;font-weight:500}
+  .key-card.collapsed .key-body{display:none}
+  .key-card.collapsed .key-collapsed{display:block}
+  .key-card p{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:10px}
+  .key-card a{color:var(--copper);font-weight:500}
+  .key-row{display:flex;gap:8px;margin-bottom:8px}
+  .key-row input{flex:1}
+  .key-clear{border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;white-space:nowrap}
+  .key-clear:hover{border-color:var(--copper);color:var(--copper)}
+  .remember-row{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;cursor:pointer}
+  .remember-row input{width:14px;height:14px;accent-color:var(--copper)}
+  .remember-row b{color:var(--copper);font-weight:500}
+  .model-row{display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-soft)}
+  .model-row input{max-width:230px;padding:7px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace}
+  .key-status{font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:8px}
+  .key-status.ok{color:var(--signal)} .key-status.no{color:var(--copper)}
+
+  .setup-foot{margin-top:30px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .upload-zone{margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:15px}
+  .uz-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .uz-file{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--copper);color:var(--copper);background:#fff;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer}
+  .uz-file:hover{background:#FCF8F3}
+  .uz-name{font-size:12.5px;color:var(--ink-soft)}
+  .uz-or{font-size:12px;color:var(--ink-soft);margin:12px 0 7px;text-align:center;position:relative}
+  #dataPaste{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:13px;font-family:inherit;resize:vertical;background:#fff}
+  #dataPaste:focus{outline:none;border-color:var(--copper)}
+  .uz-note{font-size:11.5px;color:var(--warn);margin-top:9px;line-height:1.5}
+  .btn-primary{background:var(--copper);color:#fff;border:none;border-radius:10px;padding:14px 26px;font-size:14.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:9px;font-family:inherit;transition:.15s}
+  .btn-primary:hover{background:#8f4d27}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .setup-foot small{font-size:12.5px;color:var(--ink-soft)}
+
+  /* loading */
+  .loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:80px 20px;text-align:center}
+  .spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--copper);border-radius:50%;animation:rot 1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .loading .lt{font-size:14px;font-weight:500}
+  .loading .ls{font-size:12px;color:var(--ink-soft);max-width:380px}
+
+  /* error */
+  .errbox{background:#FBEEE9;border:1px solid var(--copper);border-radius:12px;padding:20px;margin-top:20px}
+  .errbox .et{font-weight:600;color:var(--copper);margin-bottom:7px;font-size:14px}
+  .errbox p{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:6px}
+  .errbox code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:#fff;padding:2px 6px;border-radius:4px;border:1px solid var(--line);word-break:break-all}
+
+  /* dashboard */
+  .ctx-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:22px;position:sticky;top:0;z-index:30;background:var(--paper);padding:10px 0;margin-top:-10px}
+  .back{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .back:hover{border-color:var(--copper)}
+  .ctx-chip{font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 10px;color:var(--ink-soft)}
+  .ctx-chip b{color:var(--ink);font-weight:600}
+  .ctx-spacer{flex:1}
+
+  .dash-head{margin-bottom:18px}
+  .dash-head h2{font-family:'Spectral',serif;font-size:22px;font-weight:600;margin:4px 0 6px}
+  .dash-head p{font-size:13.5px;color:var(--ink-soft);max-width:620px}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:680px){.cards{grid-template-columns:1fr}.modes{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);background:var(--panel);border-radius:13px;padding:17px 18px;box-shadow:var(--shadow);cursor:pointer;transition:.14s;text-align:left;font-family:inherit}
+  .card:hover{border-color:var(--copper);transform:translateY(-1px)}
+  .card .lens-n{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--copper)}
+  .card h3{font-family:'Spectral',serif;font-size:17px;font-weight:600;margin:5px 0 3px}
+  .card .csub{font-size:12px;color:var(--ink-soft);margin-bottom:11px}
+  .card .points{list-style:none;display:flex;flex-direction:column;gap:7px}
+  .card .points li{display:flex;gap:8px;font-size:13px;line-height:1.45}
+  .card .points .k{flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--signal);background:var(--signal-soft);border-radius:4px;padding:2px 6px;height:fit-content;margin-top:1px}
+  .card .open-hint{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--copper);margin-top:12px;display:inline-block}
+
+  /* conclusion */
+  .conclusion{background:var(--ink);color:#fff;border-radius:16px;padding:24px 26px;margin-top:20px;box-shadow:0 18px 40px -22px rgba(22,32,46,.6)}
+  .conclusion .ckicker{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--signal-soft);margin-bottom:14px}
+  .attract{display:flex;gap:6px;margin-bottom:9px}
+  .attract .seg{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.14)}
+  .attract .seg.on{background:var(--signal-soft)}
+  .attract .seg.on.warn{background:#E0A668}
+  .attract-row{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .attract-label{font-family:'Spectral',serif;font-size:26px;font-weight:600;line-height:1}
+  .attract-scale{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,.6)}
+  .conclusion .rec-p{font-size:13.5px;color:rgba(255,255,255,.78);line-height:1.6;margin-bottom:18px}
+  .lens-sum{border-top:1px solid rgba(255,255,255,.14);padding-top:15px}
+  .lens-sum .lh{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--signal-soft);margin-bottom:11px}
+  .lsum-row{display:grid;grid-template-columns:130px 1fr;gap:14px;padding:8px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .lsum-row:last-child{border-bottom:none}
+  .lsum-row .ln{color:rgba(255,255,255,.6);font-weight:500}
+  .lsum-row .lv{color:rgba(255,255,255,.92);line-height:1.5}
+
+  /* flow arrow */
+  .flow-arrow{display:flex;justify-content:center;padding:22px 0 12px}
+  .flow-arrow .fa{color:var(--copper);font-size:80px;line-height:.7;font-weight:900;animation:bob 1.6s ease-in-out infinite;text-shadow:0 10px 22px rgba(166,90,46,.28)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+  /* to-do */
+  .todo-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+  .todo-head h3{font-family:'Spectral',serif;font-size:21px;font-weight:600}
+  .todo-head .cnt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft)}
+  .todo-legend{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line-soft);border-radius:8px;padding:10px 13px;margin-bottom:13px;line-height:1.55}
+  .todo-legend b{color:var(--ink)}
+  .todo-item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:start}
+  .todo-num{font-family:'Spectral',serif;font-size:19px;font-weight:600;color:var(--line);width:24px;text-align:center}
+  .todo-cat{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--signal);background:var(--signal-soft);border-radius:5px;padding:3px 7px;margin-bottom:6px}
+  .todo-title{font-size:14.5px;font-weight:600;margin-bottom:3px}
+  .todo-desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin-bottom:6px}
+  .todo-from{font-size:11.5px;color:var(--copper);font-style:italic}
+  .todo-meta{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+  .todo-pri{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;border-radius:6px;padding:4px 8px;white-space:nowrap;font-weight:500}
+  .todo-pri.now{background:#E9F0EF;color:var(--signal)}
+  .todo-pri.next{background:#F2ECE2;color:var(--warn)}
+  .todo-pri.later{background:#ECEAE4;color:var(--ink-soft)}
+  .todo-dur{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap}
+  @media(max-width:680px){.todo-item{grid-template-columns:auto 1fr}.todo-meta{grid-column:2;flex-direction:row;align-items:center}}
+
+  /* drilldown */
+  .dd-head{margin-bottom:18px}
+  .dd-head h2{font-family:'Spectral',serif;font-size:22px;font-weight:600;margin:4px 0 6px}
+  .dd-head p{font-size:13.5px;color:var(--ink-soft);max-width:620px}
+  .block{margin-bottom:22px}
+  .block-title{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+  .block-title .bar{width:3px;height:16px;border-radius:2px;background:var(--ink)}
+  .block-title .bar.sig{background:var(--signal)}
+  .block-title h3{font-size:15px;font-weight:600}
+  .out{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .out-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:9px}
+  .out-top .ic{width:30px;height:30px;border-radius:8px;flex:none;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;background:var(--ink);color:#fff}
+  .out-top h4{font-size:14px;font-weight:600;margin-bottom:1px}
+  .out-top .meta{font-size:12px;color:var(--ink-soft)}
+  .out p{font-size:13.5px;color:var(--ink-soft);line-height:1.6}
+  .out .numlist{font-size:13.5px;color:var(--ink-soft);line-height:1.6}
+  .out .numlist .nl{display:flex;gap:8px;margin-bottom:5px}
+  .out .numlist .nn{flex:none;width:17px;height:17px;border-radius:5px;background:var(--signal-soft);color:var(--signal);font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;display:grid;place-items:center;margin-top:2px}
+  .out .numlist b{color:var(--ink);font-weight:600}
+  .evidence{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+  .evidence .etag{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);display:block;margin-bottom:6px}
+  .ev{display:flex;gap:8px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:4px}
+  .ev .b{flex:none;width:5px;height:5px;border-radius:50%;background:var(--copper);margin-top:6px}
+  .ev a{color:var(--copper)}
+  .ev .assume{color:var(--warn);font-style:italic}
+  .note{display:flex;gap:9px;background:var(--signal-soft);border-radius:10px;padding:14px 16px;font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin-top:6px}
+  .note .i{flex:none;color:var(--signal);font-weight:700;font-family:'IBM Plex Mono',monospace}
+
+  .foot{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-soft);line-height:1.6;text-align:center}
+  /* context buttons */
+  .gloss-btn,.report-btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 13px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .gloss-btn:hover,.report-btn:hover{border-color:var(--copper);color:var(--copper)}
+  /* confidence banner */
+  .conf-banner{display:flex;gap:9px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:18px;font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .conf-banner .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:4px}
+  .conf-banner .dot.deep{background:var(--signal)}
+  .conf-banner .dot.shallow{background:var(--warn)}
+  .conf-banner b{color:var(--ink)}
+  /* revenue scenarios */
+  .rev-cap{font-size:12.5px;color:var(--warn);background:#FBF3E8;border-radius:7px;padding:8px 11px;margin-bottom:10px;line-height:1.5}
+  .scens{display:flex;flex-direction:column;gap:7px}
+  .scen{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line-soft);border-radius:8px;padding:9px 12px}
+  .scen .sn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--signal);font-weight:600}
+  .scen .sv{font-size:14px;font-weight:600;color:var(--ink)}
+  .scen .snote{font-size:11.5px;color:var(--ink-soft);font-style:italic}
+  /* modal (glossary) */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(26,34,48,.4);z-index:40}
+  .modal-bg.open{display:block}
+  .modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(460px,92vw);max-height:80vh;background:var(--panel);border-radius:16px;box-shadow:0 30px 70px -20px rgba(0,0,0,.45);z-index:41;flex-direction:column;overflow:hidden}
+  .modal.open{display:flex}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .modal-head h3{font-family:'Spectral',serif;font-size:17px;font-weight:600}
+  .modal-x{border:none;background:none;font-size:16px;cursor:pointer;color:var(--ink-soft)}
+  .modal-search-wrap{padding:14px 18px 6px}
+  .modal-search{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-size:13.5px;font-family:inherit}
+  .modal-search:focus{outline:none;border-color:var(--copper)}
+  .modal-body{padding:6px 18px 18px;overflow-y:auto}
+  .g-prompt{text-align:center;color:var(--ink-soft);font-size:12.5px;padding:26px 16px;line-height:1.6}
+  .g-prompt .ic{font-size:22px;display:block;margin-bottom:8px;opacity:.5}
+  .g-sugg{padding:6px 0}
+  .g-sugg .sh{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);opacity:.7;margin:4px 6px 8px}
+  .g-sugg button{display:block;width:100%;text-align:left;padding:9px 11px;border:none;border-radius:7px;font-size:13.5px;color:#9a958b;background:none;cursor:pointer;font-family:inherit}
+  .g-sugg button:hover{background:var(--signal-soft);color:var(--ink)}
+  .g-sugg button b{color:var(--signal);font-weight:600}
+  .g-result{padding:6px 0}
+  .g-result .rt{font-weight:600;font-size:16px;margin-bottom:6px}
+  .g-result .rd{font-size:13.5px;color:var(--ink-soft);line-height:1.6;background:var(--paper);border:1px solid var(--line-soft);border-radius:9px;padding:13px 15px}
+  .g-empty{text-align:center;color:var(--ink-soft);font-size:12.5px;padding:22px 10px 8px;line-height:1.6}
+  .g-empty b{color:var(--ink)}
+  /* report */
+  .report-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:38px 40px;box-shadow:var(--shadow)}
+  .report-doc h1{font-family:'Spectral',serif;font-size:26px;font-weight:600;margin-bottom:6px}
+  .report-doc .r-meta{font-size:12px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--ink)}
+  .report-doc h2{font-family:'Spectral',serif;font-size:18px;font-weight:600;margin:24px 0 10px}
+  .report-doc p{font-size:13px;color:#333;line-height:1.7;margin-bottom:8px}
+  .report-doc .r-verdict{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0;display:flex;gap:14px;align-items:center}
+  .report-doc .r-verdict .rv-s{font-family:'Spectral',serif;font-size:18px;font-weight:600;color:var(--copper);white-space:nowrap}
+  .report-doc .r-verdict .rv-t b{font-size:13.5px}
+  .report-doc .r-verdict .rv-t p{font-size:12px;margin:3px 0 0}
+  .report-doc table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}
+  .report-doc th,.report-doc td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  .report-doc th{background:var(--paper);font-weight:600;font-size:11px;color:var(--ink-soft)}
+  .report-doc .r-src{font-size:11px;color:var(--ink-soft);font-style:italic;margin-top:6px}
+  .report-doc ul{margin:6px 0 8px 18px}
+  .report-doc li{font-size:13px;color:#333;line-height:1.6;margin-bottom:4px}
+  .report-doc .r-foot{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.6}
+  @media print{
+    body{background:#fff}
+    .no-print,.brand,.ctx-bar{display:none !important}
+    .report-doc{border:none;box-shadow:none;padding:0}
+    .wrap{padding:0;max-width:none}
+  }
+  .lang-toggle{position:fixed;top:14px;right:16px;z-index:60;display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;box-shadow:var(--shadow)}
+  .lang-toggle .lt{border:none;background:none;border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);cursor:pointer}
+  .lang-toggle .lt.sel{background:var(--ink);color:#fff}
+  @media print{.lang-toggle{display:none}}
+</style>
+</head>
+<body>
+<div class="lang-toggle" id="langToggle">
+  <button class="lt sel" data-v="ko" onclick="setLang('ko')">KO</button>
+  <button class="lt" data-v="en" onclick="setLang('en')">EN</button>
+</div>
+
+<!-- ============ SETUP ============ -->
+<section class="screen active" id="s-setup">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">Frontier Foothold<small>Market-Entry Intelligence</small></div>
+      <div class="tag" data-ko="무료 · 오픈소스 · BYOK" data-en="Free · Open-source · BYOK">무료 · 오픈소스 · BYOK</div>
+    </div>
+
+    <span class="eyebrow">01 / Define the brief</span>
+    <h1 class="serif" style="margin-top:6px" data-ko="진입을 검토할 시장을 정의하세요" data-en="Define the market you're sizing up">진입을 검토할 시장을 정의하세요</h1>
+    <p class="sub" data-ko="산업과 시장만 필수입니다. AI가 큐레이션된 시장 레퍼런스와 입력 단서로 4개 관점의 진입 분석을 생성합니다. 근거 없는 단정·날조된 출처는 만들지 않도록 설계돼 있습니다." data-en="Only industry and market are required. From curated references and your cues, the AI generates a four-lens entry analysis — designed to avoid unfounded claims and fabricated sources.">산업과 시장만 필수입니다. AI가 큐레이션된 시장 레퍼런스와 입력 단서로 4개 관점의 진입 분석을 생성합니다. 근거 없는 단정·날조된 출처는 만들지 않도록 설계돼 있습니다.</p>
+
+    <!-- API KEY -->
+    <div class="key-card" id="keyCard">
+      <div class="kt" id="keyHeader" onclick="toggleKeyCard()">
+        <span>🔑 Gemini API 키 (무료)</span>
+        <span class="key-toggle" id="keyToggle">접기 ▾</span>
+      </div>
+      <div class="key-collapsed" id="keyCollapsedInfo" onclick="toggleKeyCard()">키 저장됨 · 분석 준비 완료 — <span class="key-edit">키 변경/삭제 ▾</span></div>
+      <div class="key-body" id="keyBody">
+        <p>이 도구는 <b>본인의 무료 Gemini API 키</b>로 작동합니다. 키는 브라우저에만 머물고 서버로 전송되지 않습니다. <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio에서 무료 키 발급 ↗</a></p>
+        <div class="key-row">
+          <input type="password" id="apiKey" placeholder="여기에 API 키를 붙여넣으세요 (AIza...)">
+          <button class="key-clear" id="clearKeyBtn" onclick="clearKey()">키 삭제</button>
+        </div>
+        <label class="remember-row"><input type="checkbox" id="rememberKey"> <span>이 브라우저에 키 기억하기 <b>(개인 컴퓨터에서만 권장)</b></span></label>
+        <div class="model-row">
+          <span>모델</span>
+          <input type="text" id="modelName" value="gemini-2.5-flash-lite">
+          <span style="font-size:11px">무료 모델: gemini-2.5-flash-lite · gemini-2.5-flash · gemini-3-flash</span>
+        </div>
+        <div class="key-status no" id="keyStatus">키가 입력되지 않았습니다.</div>
+      </div>
+    </div>
+
+    <!-- INDUSTRY -->
+    <div class="field">
+      <div class="field-label"><span class="n">A</span><h3 data-ko="산업" data-en="Industry">산업</h3><span class="req" data-ko="필수" data-en="required">필수</span><span class="desc" data-ko="용어와 관점을 결정" data-en="sets vocabulary & lens">용어와 관점을 결정</span></div>
+      <div class="opts" id="industryOpts">
+        <button class="opt sel" data-v="반도체">반도체<small>Semiconductor</small></button>
+        <button class="opt" data-v="엔터프라이즈 SW">엔터프라이즈 SW<small>Enterprise SW</small></button>
+        <button class="opt" data-v="자동차">자동차<small>Automotive</small></button>
+        <button class="opt" data-v="의료기기">의료기기<small>Medical Devices</small></button>
+        <button class="opt" data-v="제약·바이오">제약·바이오<small>Pharma & Bio</small></button>
+        <button class="opt" data-v="에너지·신재생">에너지·신재생<small>Energy</small></button>
+        <button class="opt" data-v="소비재·유통">소비재·유통<small>Consumer Goods</small></button>
+      </div>
+    </div>
+
+    <!-- MARKET -->
+    <div class="field">
+      <div class="field-label"><span class="n">B</span><h3 data-ko="시장" data-en="Market">시장</h3><span class="req" data-ko="필수" data-en="required">필수</span><span class="desc" data-ko="권역 또는 국가" data-en="region or country">권역 또는 국가</span></div>
+      <div class="opts" id="marketOpts">
+        <button class="opt" data-v="북미" data-depth="deep">북미<small>North America</small></button>
+        <button class="opt" data-v="유럽" data-depth="deep">유럽<small>Europe</small></button>
+        <button class="opt sel" data-v="중동·북아프리카(MENA)" data-depth="deep">중동·북아프리카<small>MENA</small></button>
+        <button class="opt" data-v="한국" data-depth="deep">한국<small>Korea</small></button>
+        <button class="opt" data-v="동아시아·동남아" data-depth="deep">동아시아·동남아<small>East/SE Asia</small></button>
+        <button class="opt" data-v="중남미" data-depth="shallow">중남미<small>Latin America</small></button>
+        <button class="opt" data-v="사하라이남 아프리카" data-depth="shallow">사하라이남 아프리카<small>Sub-Saharan Africa</small></button>
+        <button class="opt" data-v="남아시아" data-depth="shallow">남아시아<small>South Asia</small></button>
+        <button class="opt" data-v="오세아니아" data-depth="shallow">오세아니아<small>Oceania</small></button>
+      </div>
+      <div class="inp" style="margin-top:8px">
+        <input type="text" id="countryInput" placeholder="또는 특정 국가 입력 — 예: 사우디아라비아, 베트남…">
+      </div>
+      <div class="depth deep" id="depthInd"><span class="d"></span><span>MENA · 심층 레퍼런스 있음 (직접 큐레이션)</span></div>
+    </div>
+
+    <!-- FOCUS -->
+    <div class="field">
+      <div class="field-label"><span class="n">C</span><h3 data-ko="공략 대상" data-en="Focus area">공략 대상</h3><span class="optn" data-ko="선택" data-en="optional">선택</span><span class="desc" data-ko="무엇을 노리나" data-en="what you target">무엇을 노리나</span></div>
+      <div class="inp">
+        <input type="text" id="focusInput" placeholder="예: 추론용 칩, 친환경 포장재, 전기차 충전 인프라…">
+        <div class="hint">비워두면 시장 전체를, 채우면 그 대상으로 좁혀 분석합니다. 경쟁사는 입력하지 않아도 분석 결과로 파악됩니다.</div>
+      </div>
+    </div>
+
+    <!-- ENTRY TYPE -->
+    <div class="field">
+      <div class="field-label"><span class="n">D</span><h3 data-ko="진입 유형" data-en="Entry type">진입 유형</h3><span class="req" data-ko="필수" data-en="required">필수</span><span class="desc" data-ko="처음 들어가나, 이미 있나" data-en="new, or already in?">처음 들어가나, 이미 있나</span></div>
+      <div class="modes" id="entryModes">
+        <button class="mode sel" data-v="신규 진입"><b data-ko="신규 진입 · 개척" data-en="New entry">신규 진입 · 개척</b><span>아직 들어가지 않은 시장. ‘들어갈까, 어떻게’를 분석.</span></button>
+        <button class="mode" data-v="기존 확장"><b data-ko="기존 확장" data-en="Expansion">기존 확장</b><span>이미 들어간 시장. ‘어디로 더, 어떻게 키울까’를 분석.</span></button>
+      </div>
+    </div>
+
+    <!-- ANALYSIS METHOD -->
+    <div class="field">
+      <div class="field-label"><span class="n">E</span><h3 data-ko="분석 방식" data-en="Analysis method">분석 방식</h3><span class="req" data-ko="필수" data-en="required">필수</span><span class="desc" data-ko="데이터가 있나요?" data-en="Do you have data?">데이터가 있나요?</span></div>
+      <div class="modes" id="methodModes">
+        <button class="mode sel" data-v="ai" onclick="setMethod('ai')"><b data-ko="AI가 데이터 찾기" data-en="AI finds the data">AI가 데이터 찾기</b><span data-ko="내 데이터가 없을 때. AI가 시장·산업 공개 정보로 분석합니다." data-en="No data of your own. AI analyzes from public market/industry knowledge.">내 데이터가 없을 때. AI가 시장·산업 공개 정보로 분석합니다.</span></button>
+        <button class="mode" data-v="upload" onclick="setMethod('upload')"><b data-ko="내 데이터 업로드" data-en="Upload my data">내 데이터 업로드</b><span data-ko="실적·고객·KPI 데이터를 올리면 분석에 반영합니다. 브라우저 안에서만 처리, 서버 전송 없음." data-en="Upload sales/customer/KPI data to fold into the analysis. Processed in-browser, never sent to a server.">실적·고객·KPI 데이터를 올리면 분석에 반영합니다. 브라우저 안에서만 처리, 서버 전송 없음.</span></button>
+      </div>
+      <div class="upload-zone" id="uploadZone" style="display:none">
+        <div class="uz-row">
+          <label class="uz-file" for="dataFile">📎 <span data-ko="파일 선택 (CSV·텍스트)" data-en="Choose file (CSV·text)">파일 선택 (CSV·텍스트)</span></label>
+          <input type="file" id="dataFile" accept=".csv,.txt,.tsv,text/plain" onchange="loadDataFile(event)" style="display:none">
+          <span class="uz-name" id="uzName" data-ko="선택된 파일 없음" data-en="No file selected">선택된 파일 없음</span>
+        </div>
+        <div class="uz-or" data-ko="또는 데이터를 직접 붙여넣기" data-en="or paste data directly">또는 데이터를 직접 붙여넣기</div>
+        <textarea id="dataPaste" rows="4" placeholder="예: 분기별 매출, 고객 리스트, 점유율 등 — 표/숫자/메모 무엇이든" data-ko-ph="예: 분기별 매출, 고객 리스트, 점유율 등 — 표/숫자/메모 무엇이든" data-en-ph="e.g. quarterly revenue, customer list, share — tables/numbers/notes"></textarea>
+        <div class="uz-note" data-ko="⚠ 올린 데이터는 분석 1회에만 쓰이고 저장되지 않습니다. 민감정보(개인정보·기밀)는 빼고 올리세요." data-en="⚠ Uploaded data is used for this analysis only and not stored. Remove sensitive/confidential info before uploading.">⚠ 올린 데이터는 분석 1회에만 쓰이고 저장되지 않습니다. 민감정보(개인정보·기밀)는 빼고 올리세요.</div>
+      </div>
+    </div>
+
+    <div class="setup-foot">
+      <button class="btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+        <span data-ko="분석하기" data-en="Analyze">분석하기</span><span>→</span>
+      </button>
+      <small id="footHint">반도체 · MENA · 신규 진입 — AI 호출 1회로 생성</small>
+    </div>
+
+    <div id="errSlot"></div>
+
+    <div class="foot">
+      Frontier Foothold는 무료·오픈소스 정적 웹앱입니다. 모든 처리는 브라우저 안에서 일어나며, 입력한 API 키와 데이터는 서버로 전송되지 않습니다.<br>
+      AI 생성 결과는 참고용이며, 의사결정 전 반드시 검증이 필요합니다.
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOADING ============ -->
+<section class="screen" id="s-loading">
+  <div class="wrap">
+    <div class="loading">
+      <div class="spin"></div>
+      <div class="lt">AI가 진입 분석을 생성하는 중…</div>
+      <div class="ls">큐레이션 레퍼런스와 입력 조건으로 4개 관점(시장·기회/리스크·경쟁·전략) + 결론 + 실행 To-do를 구성하고 있습니다. 보통 15~40초 걸립니다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<section class="screen" id="s-dash">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">Frontier Foothold<small>Market-Entry Intelligence</small></div>
+      <div class="tag" data-ko="무료 · 오픈소스 · BYOK" data-en="Free · Open-source · BYOK">무료 · 오픈소스 · BYOK</div>
+    </div>
+    <div class="ctx-bar" id="ctxBar"></div>
+    <div class="conf-banner" id="confBanner"></div>
+    <div class="dash-head">
+      <span class="eyebrow">02 / Overview</span>
+      <h2 class="serif">4개 관점 진단</h2>
+      <p>카드를 클릭하면 추가 입력 없이 그 관점의 전체 분석과 근거가 펼쳐집니다.</p>
+    </div>
+    <div class="cards" id="cardsSlot"></div>
+    <div class="conclusion" id="conclusionSlot"></div>
+    <div class="flow-arrow"><span class="fa">↓</span></div>
+    <div id="todoSlot"></div>
+    <div class="foot">AI 생성 결과 · 참고용. 출처가 ‘추론’으로 표기된 항목은 검증된 레퍼런스가 아니라 AI 추정입니다.</div>
+  </div>
+</section>
+
+<!-- ============ DRILLDOWN ============ -->
+<section class="screen" id="s-drill">
+  <div class="wrap">
+    <div class="ctx-bar">
+      <button class="back" onclick="show('s-dash')">← 대시보드</button>
+      <span class="ctx-spacer"></span>
+    </div>
+    <div id="drillSlot"></div>
+    <div class="foot">AI 생성 결과 · 참고용.</div>
+  </div>
+</section>
+
+<!-- ============ REPORT ============ -->
+<section class="screen" id="s-report">
+  <div class="wrap">
+    <div class="ctx-bar no-print">
+      <button class="back" onclick="show('s-dash')">← 대시보드</button>
+      <span class="ctx-spacer"></span>
+      <button class="report-btn" onclick="window.print()">⎙ 인쇄 / PDF 저장</button>
+    </div>
+    <div id="reportSlot" class="report-doc"></div>
+  </div>
+</section>
+
+<!-- ============ GLOSSARY MODAL ============ -->
+<div class="modal-bg" id="gloss-bg" onclick="closeGlossary()"></div>
+<div class="modal" id="gloss-modal">
+  <div class="modal-head">
+    <h3>용어집</h3>
+    <button class="modal-x" onclick="closeGlossary()">✕</button>
+  </div>
+  <div class="modal-search-wrap">
+    <input type="text" class="modal-search" id="gloss-search" oninput="filterGlossary()" placeholder="용어 검색…">
+  </div>
+  <div class="modal-body" id="gloss-list"></div>
+</div>
+
+<script>
+/* ============================================================
+   Frontier Foothold — AI engine (BYOK Gemini)
+   All processing is client-side. Key never leaves the browser.
+   ============================================================ */
+
+/* ---- selection state ---- */
+var STATE = { industry:'반도체', market:'중동·북아프리카(MENA)', depth:'deep', entry:'신규 진입', focus:'', lang:'ko', method:'ai', userData:'' };
+var RESULT = null; // last AI result
+
+/* ---- condensed curated references (grounding) ---- */
+/* Deep regions carry real, sourced facts; the prompt tells the model to
+   use them as ground truth and to mark anything else as inference. */
+var MARKET_REF = {
+  "중동·북아프리카(MENA)": "UAE: 개인정보보호법(PDPL,2021), 금융·의료 데이터 현지화, DIFC·ADGM 별도 규제. Stargate UAE(아부다비, 1GW, G42·OpenAI·Oracle·NVIDIA, 2026 첫 200MW) 등 소버린 AI 투자. 사우디: PDPL(2024.9 시행, SDAIA), 공공데이터 해외이전 금지, 강한 현지화비율 정책+RHQ 요구, PIF·Humain·Project Transcendence($100B). 첨단 AI칩은 미국 수출통제 영향(G42 칩 이슈). 문화: 관계·신뢰 중심, 긴 사이클, 현지 파트너 필수. [출처: openai.com, u.ae, trade.gov, g42.ai]",
+  "한국": "PIPA(2011제정, 2023/2025개정, 세계 최고 수준 엄격, 매출3% 과징금, 2025.10 해외기업 국내대리인 의무, EU적정성 2025.9 인정). AI기본법 2026.1 시행(EU 다음 세계2번째, 진흥+규제). K-반도체 약$534B 투자(메모리→AI칩 전환, 용인 클러스터, K-Chips Act). 대기업그룹(삼성·SK·현대) 가치사슬 주도. 문화: 위계적·빠른실행, 속도·대응력 중시. [출처: tjc-group, nemko, koreatimes, trade.gov]",
+  "유럽": "GDPR(역외적용, 매출4%/€20M). AI법(세계최초 포괄AI규제): 금지관행 2025.2, GPAI 2025.8, 고위험 일부 2027경 연기(Digital Omnibus). 최대 매출7%/€35M. 브뤼셀효과(EU기준이 사실상 글로벌표준). 문화: 국가별 편차 큼, 규제준수·문서화·컨센서스 중시, 신중·장기. [출처: ec.europa.eu, iapp.org, tredence]",
+  "북미": "연방 포괄 프라이버시법 없음, 주별 패치워크(CA CCPA/CPRA, CO, CT, TX). 2025년 38개주 ~100건 AI법. 2025.12 행정명령으로 연방의 주AI법 선점(preemption) 추진, '관리된 혼란'. 첨단 AI칩 적성국 수출제한 강화, 2026.1 일부 칩 25% 관세(Section232). 문화: 빠르고 계약·ROI중심, 분권적 의사결정, 소송문화. [출처: drata, mlstrategies, wikipedia]",
+  "동아시아·동남아": "일본: 진흥우선 경규제(AI추진법 2025.5, 벌칙없음), APPI, 정부 생성형AI플랫폼(Gennai), 품질·신뢰·합의(稟議) 문화. 중국: 강한 데이터통제(생성형AI관리규정, 라벨링), 알고리즘등록·보안심사, 국가주도($98B)+오픈소스전략(DeepSeek·Qwen), 미국 수출통제로 칩(H20 vs 화웨이Ascend) 변수, 关系 문화. 동남아: 국가별편차, 싱가포르(AI Verify·샌드박스) 선도, 베트남 디지털기술산업법(2026), 고성장·중립. [출처: whitecase, onetrust, digitalinasia]"
+};
+var MARKET_REF_DEEP = Object.keys(MARKET_REF);
+
+var INDUSTRY_REF = {
+  "반도체": "구조: 메모리(DRAM·NAND·HBM)/시스템·로직(CPU·GPU·AI가속기)/파운드리/팹리스/소부장. 가치사슬: 설계→파운드리→후공정, design win이 매출 선행지표·락인. 경쟁: 학습용 가속기는 NVIDIA 사실상표준(SW생태계 락인), 추론·전력효율·자체칩에서 AMD·신생·빅테크 인하우스가 틈새. 진입변수: 긴 design win 사이클, 공급신뢰성, 수출통제, 고객락인. 용어: 팹, 파운드리, 팹리스, HBM, advanced packaging, 추론vs학습, 수율, 노드.",
+  "자동차": "구조: OEM─Tier1─Tier2/3 계층, 수주(nomination)가 진입핵심·차종수명(5~7년) 락인. 변화: 전동화(EV, 최근 하이브리드 재조정), SDV(소프트웨어정의차량, OEM 절반 최우선, OTA·구독 고마진), 중앙·존아키텍처(가상화, NVIDIA·Qualcomm·NXP·ST 진출; AUMOVIO·Valeo 시연), 중국發 경쟁, EU 디지털제품패스포트(DPP) 추적성 Tier2/3까지. 진입변수: 긴수주영업, 품질·리콜리스크, SW통합역량, 플랫폼공용화·다브랜드(VW그룹 사례), 지역규제(DPP·배출·관세).",
+  "엔터프라이즈 SW": "시장: B2B SaaS ~$390B(2025), 연18~26%성장, 버티컬SaaS가 수평형 2배성장. 변화: 코파일럿→에이전틱AI(Gartner: 2026말 엔터프라이즈앱40% AI에이전트), per-seat→사용량·성과기반 과금(85% 도입), 구매자 영업미팅 17%만 사용. GTM: 다단계·장기사이클, ROI정량증명, 보안·컴플라이언스(SOC2·ISO42001·NIS2) 전제, 채널·SI파트너, land&expand. 진입변수: 긴사이클·다수의사결정자, 인증, 파트너, AI에이전트 전환, 지역 데이터규제.",
+  "의료기기": "", "제약·바이오": "", "에너지·신재생": "", "소비재·유통": ""
+};
+
+/* ---- UI wiring ---- */
+function $(id){return document.getElementById(id)}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});$(id).classList.add('active');window.scrollTo(0,0)}
+
+/* selection handlers */
+$('industryOpts').addEventListener('click',function(e){var b=e.target.closest('.opt');if(!b)return;
+  this.querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});b.classList.add('sel');
+  STATE.industry=b.dataset.v;updateFoot();});
+$('marketOpts').addEventListener('click',function(e){var b=e.target.closest('.opt');if(!b)return;
+  this.querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});b.classList.add('sel');
+  STATE.market=b.dataset.v;STATE.depth=b.dataset.depth;$('countryInput').value='';updateDepth();updateFoot();});
+$('countryInput').addEventListener('input',function(){
+  if(this.value.trim()){STATE.market=this.value.trim();STATE.depth='shallow';
+    $('marketOpts').querySelectorAll('.opt').forEach(function(o){o.classList.remove('sel')});updateDepth();updateFoot();}});
+$('entryModes').addEventListener('click',function(e){var b=e.target.closest('.mode');if(!b)return;
+  this.querySelectorAll('.mode').forEach(function(o){o.classList.remove('sel')});b.classList.add('sel');
+  STATE.entry=b.dataset.v;updateFoot();});
+function setLang(l){
+  STATE.lang=l;
+  document.querySelectorAll('.lang-toggle .lt').forEach(function(b){b.classList.toggle('sel',b.dataset.v===l);});
+  // swap any element tagged with data-ko/data-en (setup chrome)
+  document.querySelectorAll('[data-ko]').forEach(function(el){
+    var v=(l==='en')?el.getAttribute('data-en'):el.getAttribute('data-ko');
+    if(v!=null) el.textContent=v;
+  });
+  document.querySelectorAll('[data-ko-ph]').forEach(function(el){
+    var v=(l==='en')?el.getAttribute('data-en-ph'):el.getAttribute('data-ko-ph');
+    if(v!=null) el.placeholder=v;
+  });
+  updateFoot();updateDepth();
+  // re-localize result screens if analysis already exists
+  if(RESULT){ renderAll(RESULT); }
+  try{ if($('rememberKey').checked) localStorage.setItem('ff_lang',l); }catch(e){}
+}
+$('focusInput').addEventListener('input',function(){STATE.focus=this.value.trim()});
+$('dataPaste') && $('dataPaste').addEventListener('input',function(){STATE.userData=this.value.trim();});
+function setMethod(m){
+  STATE.method=m;
+  document.querySelectorAll('#methodModes .mode').forEach(function(b){b.classList.toggle('sel',b.dataset.v===m);});
+  $('uploadZone').style.display = (m==='upload')?'block':'none';
+}
+function loadDataFile(ev){
+  var f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  $('uzName').textContent=f.name;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var txt=String(rd.result||'');
+    if(txt.length>12000) txt=txt.slice(0,12000)+'\n…(이하 생략 / truncated)';
+    STATE.userData=txt;
+    // also mirror into paste box so user sees it was captured
+    if($('dataPaste')&&!$('dataPaste').value) $('dataPaste').value=txt;
+  };
+  rd.readAsText(f);
+}
+$('modelName').addEventListener('input',function(){saveKeyMaybe()});
+$('apiKey').addEventListener('input',function(){
+  var ok=this.value.trim().length>10;
+  $('keyStatus').className='key-status '+(ok?'ok':'no');
+  $('keyStatus').textContent=ok?'키 입력됨 · 분석 준비 완료':'키가 입력되지 않았습니다.';
+  saveKeyMaybe();});
+$('rememberKey').addEventListener('change',function(){
+  if(this.checked){saveKeyMaybe();} else {safeRemove('ff_key');}});
+
+function saveKeyMaybe(){
+  try{
+    if($('rememberKey').checked){
+      var k=$('apiKey').value.trim();
+      if(k) localStorage.setItem('ff_key',k);
+      localStorage.setItem('ff_model',$('modelName').value.trim());
+    }
+  }catch(e){/* storage blocked (e.g. preview) — ignore, app still works */}
+}
+function safeRemove(k){try{localStorage.removeItem(k)}catch(e){}}
+function clearKey(){
+  $('apiKey').value='';
+  $('keyStatus').className='key-status no';
+  $('keyStatus').textContent='키가 삭제되었습니다.';
+  safeRemove('ff_key');
+  $('rememberKey').checked=false;
+}
+function loadSavedKey(){
+  try{
+    var k=localStorage.getItem('ff_key');
+    var m=localStorage.getItem('ff_model');
+    if(k){$('apiKey').value=k;$('rememberKey').checked=true;
+      $('keyStatus').className='key-status ok';$('keyStatus').textContent='저장된 키 불러옴 · 분석 준비 완료';
+      $('keyCard').classList.add('collapsed');$('keyToggle').textContent='펼치기 ▸';} // collapse since key already saved
+    if(m){$('modelName').value=m;}
+  }catch(e){/* storage blocked — ignore */}
+}
+function toggleKeyCard(){ var c=$('keyCard').classList.toggle('collapsed'); $('keyToggle').textContent = c?'펼치기 ▸':'접기 ▾'; }
+
+function updateDepth(){var d=$('depthInd');var deep=(STATE.depth==='deep');
+  d.className='depth '+(deep?'deep':'shallow');
+  d.querySelector('span:last-child').textContent = deep
+    ? STATE.market+' · '+T('심층 레퍼런스 있음 (직접 큐레이션)','deep reference available (curated)')
+    : STATE.market+' · '+T('추론 비중 높음 (AI 일반 지식 기반)','mostly inference (AI general knowledge)');}
+function updateFoot(){$('footHint').textContent=STATE.industry+' · '+STATE.market+' · '+STATE.entry+' — '+T('AI 호출 1회로 생성','one AI call');}
+
+/* ---- prompt builder (embeds all our principles) ---- */
+function buildPrompt(){
+  var mref = MARKET_REF[STATE.market] || '(이 시장은 큐레이션된 심층 레퍼런스가 없음 — AI 일반 지식으로 추론하되 그렇게 표기할 것)';
+  var iref = INDUSTRY_REF[STATE.industry] || '(이 산업은 큐레이션 레퍼런스가 없음 — AI 일반 지식으로 추론하되 그렇게 표기할 것)';
+  var focus = STATE.focus || '(미지정 — 시장 전체)';
+  var userBlock = (STATE.method==='upload' && STATE.userData)
+    ? "\n[사용자가 업로드한 실제 데이터 — 최우선 근거로 사용. 이 데이터에서 도출되는 분석은 evidence를 '사용자 업로드 데이터 기반'으로 표기]\n"+STATE.userData+"\n"
+    : "";
+  return [
+"당신은 17년차 B2B 엔터프라이즈 시장진입 전략 애널리스트입니다. 아래 조건으로 '시장 진입/확장 분석'을 작성합니다.",
+"",
+"[분석 조건]",
+"- 산업: "+STATE.industry,
+"- 시장: "+STATE.market,
+"- 진입 유형: "+STATE.entry,
+"- 공략 대상: "+focus,
+userBlock,
+"[큐레이션 시장 레퍼런스 — 이것은 검증된 사실. 우선 근거로 사용]",
+mref,
+"",
+"[큐레이션 산업 레퍼런스 — 검증된 사실]",
+iref,
+"",
+"[절대 원칙 — 반드시 지킬 것]",
+"1. 근거 없이 단정하지 말 것. 위 레퍼런스에 있는 사실은 evidence를 '큐레이션 레퍼런스 기반'으로, 그 외 추정은 '추론'으로 명확히 표기.",
+"2. URL·출처를 절대 지어내지 말 것. 위 레퍼런스의 [출처]에 있는 것만 인용 가능. 없으면 출처 없이 '추론'으로.",
+"3. 정량 수치(매출·시장규모)는 단정하지 말 것. 반드시 '가정 기반 추정'임을 명시하고, 단일 숫자가 아니라 보수/기본/공격 3개 시나리오 구간으로. 그리고 어떻게 계산했는지(TAM×침투율 등) calcBasis에 단계별로 적을 것.",
+"4. 경쟁사는 입력이 아니라 분석으로 도출.",
+"5. 진입 유형이 '기존 확장'이면 관점을 확장(신규지역·고객·업셀)으로 전환.",
+"6. 이 분석에 등장하는 전문용어 6~10개를 glossary에 한 줄 정의로 정리(비전문가도 이해하게).",
+"7. 사용자가 업로드한 데이터가 있으면, 매출·정량 추정과 시장 판단을 그 데이터에 우선 근거하고 evidence에 '사용자 업로드 데이터 기반'으로 표기. 데이터가 부족한 부분만 추론으로 보완.",
+"",
+"[출력 형식 — 반드시 아래 JSON만 출력. 마크다운·설명·코드펜스 금지. "+(STATE.lang==='en'?'ALL text values must be written in natural English.':'모든 텍스트는 한국어로 작성.')+"]",
+"{",
+'  "conclusion": {',
+'    "attractiveness": "5단계 등급 라벨 (한국어면: 높음/조건부 높음/중간/조건부 낮음/낮음, 영어면: High/Conditionally High/Moderate/Conditionally Low/Low)",',
+'    "attractivenessLevel": "위 등급의 숫자값 (1=낮음, 2=조건부 낮음, 3=중간, 4=조건부 높음, 5=높음)",',
+'    "recommendation": "한 줄 권고",',
+'    "rationale": "왜 이 등급인지 2~3문장",',
+'    "lensSummaries": [',
+'      {"lens":"시장 정보","summary":"한 줄"},',
+'      {"lens":"기회 & 리스크","summary":"한 줄"},',
+'      {"lens":"경쟁사 현황","summary":"한 줄"},',
+'      {"lens":"진입 전략","summary":"한 줄"}',
+'    ]',
+'  },',
+'  "lenses": {',
+'    "market":     {"sub":"시장·고객·법규·문화","points":[{"k":"규모","head":"...","body":"...","evidence":"큐레이션 레퍼런스 기반 또는 추론"}]},',
+'    "opportunity":{"sub":"기회·리스크·유의사항","points":[{"k":"기회","head":"...","body":"...","evidence":"..."},{"k":"리스크","head":"...","body":"...","evidence":"..."},{"k":"유의","head":"...","body":"...","evidence":"..."}],',
+'      "revenue":{"label":"예상 매출 (가정 기반 추정)","calcBasis":["1단계: TAM 추정 — ...","2단계: 침투율 가정 — ...","3단계: 단가/계약규모 가정 — ..."],"scenarios":[{"name":"보수","value":"$ 구간","note":"가정"},{"name":"기본","value":"$ 구간","note":"가정"},{"name":"공격","value":"$ 구간","note":"가정"}],"caveat":"모든 수치는 가정 기반 추정이며 실제와 다를 수 있음"}},',
+'    "competition":{"sub":"플레이어·포지션·빈틈","points":[{"k":"지배자","head":"...","body":"...","evidence":"..."}]},',
+'    "strategy":   {"sub":"경로·순서·단계","points":[{"k":"경로","head":"...","body":"...","evidence":"..."}]}',
+'  },',
+'  "todos": [',
+'    {"area":"규제·법무","title":"...","detail":"...","fromLens":"기회 & 리스크","priority":"지금","duration":"2~3주"}',
+'  ],',
+'  "glossary": [ {"term":"용어","def":"한 줄 정의"} ]',
+"}",
+"",
+"각 렌즈 points는 3~4개. todos는 5~7개이며 priority는 반드시 "+(STATE.lang==='en'?"'Now'/'Next'/'Later'":"'지금'/'다음'/'이후'")+" 중 하나, duration은 구간(예: 2~3주, 1~2개월 / 2-3 weeks, 1-2 months). head는 짧은 제목, body는 1~2문장. opportunity 렌즈에는 revenue 객체를 반드시 포함."
+  ].join("\n");
+}
+
+/* ---- Gemini call ---- */
+async function runAnalysis(){
+  var key=$('apiKey').value.trim();
+  var model=$('modelName').value.trim()||'gemini-2.5-flash';
+  $('errSlot').innerHTML='';
+  if(key.length<10){ showError('API 키가 필요합니다','위의 키 입력란에 무료 Gemini API 키를 붙여넣어 주세요. Google AI Studio에서 무료로 발급받을 수 있습니다.',''); return; }
+
+  show('s-loading');
+  var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key);
+  var body={ contents:[{parts:[{text:buildPrompt()}]}], generationConfig:{temperature:0.4, maxOutputTokens:8192} };
+
+  try{
+    var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok){
+      var t=await res.text();
+      show('s-setup');
+      showError('AI 호출 실패 (HTTP '+res.status+')',
+        '키가 올바른지, 모델 이름이 맞는지 확인하세요. 무료 모델명: gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3-flash 중 하나로 바꿔보세요.', t.slice(0,300));
+      return;
+    }
+    var data=await res.json();
+    var text='';
+    if(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts){
+      text=data.candidates[0].content.parts.map(function(p){return p.text||''}).join('');
+    }
+    var clean=text.replace(/```json/gi,'').replace(/```/g,'').trim();
+    var first=clean.indexOf('{'), last=clean.lastIndexOf('}');
+    if(first>=0&&last>=0) clean=clean.slice(first,last+1);
+    var parsed=JSON.parse(clean);
+    RESULT=parsed;
+    renderAll(parsed);
+    show('s-dash');
+  }catch(err){
+    show('s-setup');
+    showError('분석 처리 중 오류','AI 응답을 해석하지 못했습니다. 다시 시도하거나, 모델을 gemini-2.5-flash-lite 로 바꿔보세요.', String(err));
+  }
+}
+
+function showError(title,msg,detail){
+  var d=detail?('<p style="margin-top:8px"><code>'+escapeHtml(detail)+'</code></p>'):'';
+  $('errSlot').innerHTML='<div class="errbox"><div class="et">'+title+'</div><p>'+msg+'</p>'+d+'</div>';
+}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]})}
+
+/* ---- renderers ---- */
+var LENS_META = {
+  market:{n:'LENS 01',t:'시장 정보',intro:'진입 판단 전에 알아야 할 시장의 사실관계입니다.'},
+  opportunity:{n:'LENS 02',t:'기회 & 리스크',intro:'들어갈 가치(기회), 조심할 것(리스크), 실행 시 챙길 것(유의사항).'},
+  competition:{n:'LENS 03',t:'경쟁사 현황',intro:'누가 있고, 어디에 서 있으며, 어디에 빈틈이 있는지. 경쟁사는 분석 결과로 도출됩니다.'},
+  strategy:{n:'LENS 04',t:'진입 전략 (실행 로드맵)',intro:'앞 분석을 어떻게 들어갈지로 옮깁니다. 경로·순서·단계.'}
+};
+var ATTRACT_LEVELS=['낮음','조건부 낮음','중간','조건부 높음','높음'];
+/* UI chrome labels (not AI content) by language */
+function T(ko,en){return STATE.lang==='en'?en:ko;}
+var LENS_META_EN = {
+  market:{n:'LENS 01',t:'Market Profile',intro:'The market facts you need before judging entry.'},
+  opportunity:{n:'LENS 02',t:'Opportunity & Risk',intro:'Worth entering (opportunity), what to watch (risk), and execution watch-outs.'},
+  competition:{n:'LENS 03',t:'Competitive Landscape',intro:'Who is here, where they stand, and where the gaps are — derived as an output.'},
+  strategy:{n:'LENS 04',t:'Entry Strategy (Roadmap)',intro:'Turns the analysis into how to enter — route, sequence, stages.'}
+};
+function lensMeta(key){ return STATE.lang==='en'?LENS_META_EN[key]:LENS_META[key]; }
+
+function renderAll(d){
+  // localize the static dashboard heading
+  var dh=document.querySelector('#s-dash .dash-head');
+  if(dh){dh.querySelector('.eyebrow').textContent=T('02 / Overview','02 / Overview');
+    dh.querySelector('h2').textContent=T('4개 관점 진단','Four-Lens Diagnosis');
+    dh.querySelector('p').textContent=T('카드를 클릭하면 추가 입력 없이 그 관점의 전체 분석과 근거가 펼쳐집니다.','Click a card to expand that lens in full — with its evidence, no extra input.');}
+  renderCtx();
+  renderCards(d);
+  renderConclusion(d.conclusion);
+  renderTodos(d.todos||[]);
+}
+function renderCtx(){
+  var deep=(STATE.depth==='deep');
+  $('ctxBar').innerHTML =
+    '<button class="back" onclick="show(\'s-setup\')">← '+T('설정','Setup')+'</button>'+
+    '<span class="ctx-chip"><b>'+T('산업','Industry')+'</b> '+escapeHtml(STATE.industry)+'</span>'+
+    '<span class="ctx-chip"><b>'+T('시장','Market')+'</b> '+escapeHtml(STATE.market)+'</span>'+
+    '<span class="ctx-chip"><b>'+T('유형','Type')+'</b> '+escapeHtml(STATE.entry)+'</span>'+
+    (STATE.focus?'<span class="ctx-chip"><b>'+T('공략','Focus')+'</b> '+escapeHtml(STATE.focus)+'</span>':'')+
+    '<span class="ctx-spacer"></span>'+
+    '<button class="gloss-btn" onclick="openGlossary()">📖 '+T('용어집','Glossary')+'</button>'+
+    '<button class="report-btn" onclick="buildReport()">⎙ '+T('리포트','Report')+'</button>';
+  var usedUpload = (STATE.method==='upload' && STATE.userData);
+  $('confBanner').innerHTML =
+    '<span class="dot '+(usedUpload?'deep':(deep?'deep':'shallow'))+'"></span>'+
+    '<span><b>'+T('데이터 신뢰도','Data confidence')+': '+(usedUpload?T('내 업로드 데이터 기반','based on your uploaded data'):(deep?T('심층 레퍼런스 기반','curated reference'):T('추론 비중 높음','mostly inference')))+'</b> — '+
+    (usedUpload
+      ? T('업로드한 데이터를 우선 근거로 분석했습니다. 데이터가 부족한 부분은 시장 레퍼런스·추론으로 보완됩니다.','Analysis is grounded first in your uploaded data; gaps are supplemented by market references and inference.')
+      : (deep
+        ? T('이 시장은 직접 검증한 실제 레퍼런스(규제·정책·출처 링크)가 있어, 분석이 그 사실에 근거합니다.','This market has verified curated references (regulation, policy, source links), so the analysis is grounded in fact.')
+        : T('이 시장은 검증된 레퍼런스가 부족해 AI의 일반 지식 추론 비중이 높습니다. 사실관계는 추가 확인을 권장합니다.','This market lacks curated references, so the analysis leans on AI general-knowledge inference. Verify the facts.')))+
+    '</span>';
+}
+function renderCards(d){
+  var order=['market','opportunity','competition','strategy'];
+  var html='';
+  order.forEach(function(key){
+    var lens=d.lenses&&d.lenses[key]; var meta=lensMeta(key);
+    if(!lens)return;
+    var pts=(lens.points||[]).slice(0,4).map(function(p){
+      return '<li><span class="k">'+escapeHtml(p.k||'·')+'</span><div>'+boldify(p.head||'')+'</div></li>';
+    }).join('');
+    html+='<button class="card" onclick="openLens(\''+key+'\')">'+
+      '<span class="lens-n">'+meta.n+'</span>'+
+      '<h3>'+meta.t+'</h3>'+
+      '<div class="csub">'+escapeHtml(lens.sub||'')+'</div>'+
+      '<ul class="points">'+pts+'</ul>'+
+      '<span class="open-hint">'+T('세부내역','Details')+' →</span>'+
+    '</button>';
+  });
+  $('cardsSlot').innerHTML=html;
+}
+function renderConclusion(c){
+  if(!c){$('conclusionSlot').innerHTML='';return;}
+  var idx=parseInt(c.attractivenessLevel,10);
+  if(isNaN(idx)){ idx=ATTRACT_LEVELS.indexOf((c.attractiveness||'중간').trim())+1; }
+  idx=idx-1; if(idx<0||idx>4)idx=2; // 0-based
+  var segs='';
+  for(var i=0;i<5;i++){var on=i<=idx; var warn=(idx<=1);
+    segs+='<div class="seg'+(on?' on':'')+(on&&warn?' warn':'')+'"></div>';}
+  var sums=(c.lensSummaries||[]).map(function(s){
+    return '<div class="lsum-row"><span class="ln">'+escapeHtml(s.lens||'')+'</span><span class="lv">'+boldify(s.summary||'')+'</span></div>';
+  }).join('');
+  $('conclusionSlot').innerHTML=
+    '<div class="ckicker">Conclusion</div>'+
+    '<div class="attract">'+segs+'</div>'+
+    '<div class="attract-row"><span class="attract-label">'+escapeHtml(c.attractiveness||'중간')+'</span>'+
+      '<span class="attract-scale">'+T('높음 · 조건부 높음 · 중간 · 조건부 낮음 · 낮음','High · Cond. High · Moderate · Cond. Low · Low')+'</span></div>'+
+    '<p class="rec-p">'+boldify(c.recommendation||'')+'</p>'+
+    '<div class="lens-sum"><div class="lh">'+T('분석 Summary','Analysis summary')+'</div>'+sums+'</div>';
+}
+function renderTodos(todos){
+  if(!todos.length){$('todoSlot').innerHTML='';return;}
+  var priClass={'지금':'now','다음':'next','이후':'later','Now':'now','Next':'next','Later':'later'};
+  var items=todos.map(function(t,i){
+    var pc=priClass[(t.priority||'').trim()]||'later';
+    return '<div class="todo-item">'+
+      '<div class="todo-num">'+String(i+1).padStart(2,'0')+'</div>'+
+      '<div class="todo-main">'+
+        '<span class="todo-cat">'+escapeHtml(t.area||'')+'</span>'+
+        '<div class="todo-title">'+escapeHtml(t.title||'')+'</div>'+
+        '<div class="todo-desc">'+escapeHtml(t.detail||'')+'</div>'+
+        (t.fromLens?'<div class="todo-from">근거: '+escapeHtml(t.fromLens)+'</div>':'')+
+      '</div>'+
+      '<div class="todo-meta"><span class="todo-pri '+pc+'">'+escapeHtml(t.priority||T('이후','Later'))+'</span>'+
+        (t.duration?'<span class="todo-dur">'+escapeHtml(t.duration)+'</span>':'')+'</div>'+
+    '</div>';
+  }).join('');
+  $('todoSlot').innerHTML=
+    '<div class="todo-head"><h3>To-do list</h3><span class="cnt">'+T('결론에서 도출된 실행 항목 · '+todos.length+'건','Actions derived from the conclusion · '+todos.length)+'</span></div>'+
+    '<div class="todo-legend">'+T('각 항목은 위에서부터 <b>우선순위 순서</b>로 정렬돼 있습니다. 오른쪽 칩은 착수 시점(<b>지금 → 다음 → 이후</b>), 그 아래는 <b>예상 소요 기간</b>입니다.','Items are sorted top-down by <b>priority</b>. The chip on the right is when to start (<b>Now → Next → Later</b>); below it is the <b>estimated duration</b>.')+'</div>'+
+    items;
+}
+function openLens(key){
+  var lens=RESULT&&RESULT.lenses&&RESULT.lenses[key]; var meta=lensMeta(key);
+  if(!lens)return;
+  var blocks=(lens.points||[]).map(function(p,i){
+    var ev=p.evidence?('<div class="evidence"><span class="etag">'+T('근거','Evidence')+'</span><div class="ev"><span class="b"></span><div'+
+      (/(추론|inference)/i.test(p.evidence)?' class="assume"':'')+'>'+escapeHtml(p.evidence)+'</div></div></div>'):'';
+    return '<div class="out"><div class="out-top"><div class="ic">'+(i+1)+'</div>'+
+      '<div><h4>'+escapeHtml(p.k||(T('항목 ','Item ')+(i+1)))+'</h4>'+(p.head?'<div class="meta">'+stripBold(p.head)+'</div>':'')+'</div></div>'+
+      '<p>'+boldify(p.body||p.head||'')+'</p>'+ev+'</div>';
+  }).join('');
+  var rev='';
+  if(key==='opportunity' && lens.revenue){
+    var r=lens.revenue;
+    var calc=(r.calcBasis||[]).map(function(c,i){
+      return '<div class="nl"><span class="nn">'+(i+1)+'</span><div>'+boldify(c)+'</div></div>';}).join('');
+    var scen=(r.scenarios||[]).map(function(s){
+      return '<div class="scen"><span class="sn">'+escapeHtml(s.name||'')+'</span>'+
+        '<span class="sv">'+escapeHtml(s.value||'')+'</span>'+
+        '<span class="snote">'+escapeHtml(s.note||T('가정','assumption'))+'</span></div>';}).join('');
+    rev='<div class="block"><div class="block-title"><span class="bar"></span><h3>'+escapeHtml(r.label||T('예상 매출 (가정 기반 추정)','Revenue (assumption-based estimate)'))+'</h3></div>'+
+      '<div class="out"><div class="rev-cap">⚠ '+escapeHtml(r.caveat||T('모든 수치는 가정 기반 추정이며 실제와 다를 수 있습니다.','All figures are assumption-based estimates and may differ from reality.'))+'</div>'+
+      (calc?'<div class="etag" style="margin:4px 0 6px">'+T('산출 근거 (계산 단계)','Calculation basis (steps)')+'</div><div class="numlist">'+calc+'</div>':'')+
+      (scen?'<div class="etag" style="margin:14px 0 6px">'+T('시나리오 구간','Scenario ranges')+'</div><div class="scens">'+scen+'</div>':'')+
+      '</div></div>';
+  }
+  $('drillSlot').innerHTML=
+    '<div class="dd-head"><span class="eyebrow">Drill-down · '+meta.n+'</span>'+
+      '<h2 class="serif">'+meta.t+'</h2><p>'+meta.intro+'</p></div>'+
+    '<div class="block"><div class="block-title"><span class="bar sig"></span><h3>'+escapeHtml(lens.sub||T('세부 분석','Details'))+'</h3></div>'+blocks+'</div>'+
+    rev+
+    '<div class="note"><span class="i">!</span><span>'+T('이 분석은 AI가 큐레이션 레퍼런스와 입력 조건으로 생성한 결과입니다. ‘근거’가 추론으로 표기된 항목은 검증이 필요합니다. 종합 판정(진입 매력도)은 대시보드 결론에 한 번만 표시됩니다.','This analysis was AI-generated from curated references and your inputs. Items marked ‘inference’ in Evidence need verification. The overall verdict appears once, in the dashboard conclusion.')+'</span></div>';
+  show('s-drill');
+}
+
+/* tiny helpers: allow **bold** style markers from model, else plain */
+function boldify(s){return escapeHtml(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}
+function stripBold(s){return escapeHtml(s).replace(/\*\*(.+?)\*\*/g,'$1')}
+
+/* ---- glossary (search-first, from AI result) ---- */
+function glossaryData(){ return (RESULT&&RESULT.glossary)||[]; }
+function openGlossary(){
+  $('gloss-bg').classList.add('open');$('gloss-modal').classList.add('open');
+  $('gloss-search').value='';$('gloss-search').placeholder=T('용어 검색…','Search terms…');
+  document.querySelector('#gloss-modal .modal-head h3').textContent=T('용어집','Glossary');
+  renderGlossary('');setTimeout(function(){$('gloss-search').focus()},50);
+}
+function closeGlossary(){$('gloss-bg').classList.remove('open');$('gloss-modal').classList.remove('open');}
+function filterGlossary(){renderGlossary($('gloss-search').value);}
+function renderGlossary(filter){
+  var list=$('gloss-list'); var f=(filter||'').toLowerCase().trim(); var all=glossaryData();
+  if(!all.length){ list.innerHTML='<div class="g-empty">'+T('이 분석에는 등록된 용어가 없습니다.','No terms registered for this analysis.')+'</div>'; return; }
+  if(!f){ list.innerHTML='<div class="g-prompt"><span class="ic">🔍</span>'+T('찾고 싶은 용어를 입력하세요.<br>등록된 용어면 입력 중에 후보가 표시됩니다.','Type a term to search.<br>Registered terms appear as suggestions while you type.')+'</div>'; return; }
+  var exact=all.find(function(g){return (g.term||'').toLowerCase()===f;});
+  if(exact){ list.innerHTML='<div class="g-result"><div class="rt">'+escapeHtml(exact.term)+'</div><div class="rd">'+escapeHtml(exact.def||'')+'</div></div>'; return; }
+  var matches=all.filter(function(g){return (g.term||'').toLowerCase().indexOf(f)>=0 || (g.def||'').toLowerCase().indexOf(f)>=0;});
+  if(matches.length){
+    var html='<div class="g-sugg"><div class="sh">'+T('이런 용어가 있어요','Matching terms')+'</div>';
+    matches.forEach(function(g){
+      var re=new RegExp('('+f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');
+      html+='<button onclick="pickTerm(\''+encodeURIComponent(g.term)+'\')">'+escapeHtml(g.term).replace(re,'<b>$1</b>')+'</button>';
+    });
+    list.innerHTML=html+'</div>'; return;
+  }
+  list.innerHTML='<div class="g-empty"><b>'+escapeHtml((filter||'').trim())+'</b> — '+T('이 분야와 관계가 적은 단어라 용어집에 없습니다.<br>별도로 검색하기 바랍니다.','is not closely related to this analysis, so it isn\'t in the glossary.<br>Please look it up separately.')+'</div>';
+}
+function pickTerm(enc){var t=decodeURIComponent(enc);$('gloss-search').value=t;renderGlossary(t);}
+
+/* ---- report builder ---- */
+function buildReport(){
+  if(!RESULT){return;}
+  var c=RESULT.conclusion||{}; var L=RESULT.lenses||{}; var todos=RESULT.todos||[];
+  var now=new Date(); var dateStr=now.getFullYear()+'.'+(now.getMonth()+1)+'.'+now.getDate();
+  function lensList(key){
+    var lens=L[key]; if(!lens)return'';
+    var items=(lens.points||[]).map(function(p){return '<li><b>'+stripBold(p.head||p.k||'')+'</b> '+stripBold(p.body||'')+'</li>';}).join('');
+    return '<ul>'+items+'</ul>';
+  }
+  var sums=(c.lensSummaries||[]).map(function(s){return '<li><b>'+escapeHtml(s.lens||'')+':</b> '+stripBold(s.summary||'')+'</li>';}).join('');
+  var rev='';
+  if(L.opportunity&&L.opportunity.revenue){
+    var r=L.opportunity.revenue;
+    var rows=(r.scenarios||[]).map(function(s){return '<tr><td>'+escapeHtml(s.name||'')+'</td><td>'+escapeHtml(s.value||'')+'</td><td>'+escapeHtml(s.note||T('가정','assumption'))+'</td></tr>';}).join('');
+    rev='<h2>'+T('예상 매출 (가정 기반 추정)','Revenue (assumption-based estimate)')+'</h2><p class="r-src">'+escapeHtml(r.caveat||T('가정 기반 추정치','assumption-based estimate'))+'</p>'+
+      '<table><thead><tr><th>'+T('시나리오','Scenario')+'</th><th>'+T('구간','Range')+'</th><th>'+T('비고','Note')+'</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+  var todoRows=todos.map(function(t){return '<tr><td>'+escapeHtml(t.area||'')+'</td><td>'+escapeHtml(t.title||'')+'</td><td>'+escapeHtml(t.priority||'')+'</td><td>'+escapeHtml(t.duration||'')+'</td></tr>';}).join('');
+  $('reportSlot').innerHTML=
+    '<h1>'+T('시장 진입 분석 리포트','Market-Entry Analysis Report')+'</h1>'+
+    '<div class="r-meta">'+escapeHtml(STATE.industry)+' · '+escapeHtml(STATE.market)+' · '+escapeHtml(STATE.entry)+(STATE.focus?(' · '+escapeHtml(STATE.focus)):'')+' &nbsp;|&nbsp; '+dateStr+' &nbsp;|&nbsp; Frontier Foothold</div>'+
+    '<h2>'+T('1. 종합 결론','1. Conclusion')+'</h2>'+
+    '<div class="r-verdict"><div class="rv-s">'+escapeHtml(c.attractiveness||'중간')+'</div>'+
+      '<div class="rv-t"><b>'+stripBold(c.recommendation||'')+'</b><p>'+stripBold(c.rationale||'')+'</p></div></div>'+
+    '<ul>'+sums+'</ul>'+
+    '<h2>'+T('2. 시장 정보','2. Market Profile')+'</h2>'+lensList('market')+
+    '<h2>'+T('3. 기회 & 리스크','3. Opportunity & Risk')+'</h2>'+lensList('opportunity')+rev+
+    '<h2>'+T('4. 경쟁사 현황','4. Competitive Landscape')+'</h2>'+lensList('competition')+
+    '<h2>'+T('5. 진입 전략','5. Entry Strategy')+'</h2>'+lensList('strategy')+
+    '<h2>'+T('6. 실행 To-do','6. Action To-do')+'</h2>'+
+    '<table><thead><tr><th>'+T('구분','Area')+'</th><th>'+T('할 일','Task')+'</th><th>'+T('우선','Pri.')+'</th><th>'+T('기간','Dur.')+'</th></tr></thead><tbody>'+todoRows+'</tbody></table>'+
+    '<div class="r-foot">'+T('본 리포트는 Frontier Foothold가 AI로 생성한 분석입니다. 참고용이며, 의사결정 전 검증이 필요합니다.','This report was AI-generated by Frontier Foothold. For reference only; verify before deciding.')+'<br>© Frontier Foothold</div>';
+  show('s-report');
+}
+
+updateFoot();updateDepth();loadSavedKey();
+try{ var sl=localStorage.getItem('ff_lang'); if(sl==='en') setLang('en'); }catch(e){}
+</script>
+</body>
+</html>
