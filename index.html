@@ -275,6 +275,11 @@
   .lang-toggle .lt{border:none;background:none;border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);cursor:pointer}
   .lang-toggle .lt.sel{background:var(--ink);color:#fff}
   @media print{.lang-toggle{display:none}}
+  .translate-bar{display:none;align-items:center;justify-content:space-between;gap:12px;background:#FBF3E8;border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--ink-soft)}
+  .translate-bar button{border:none;background:var(--copper);color:#fff;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .translate-bar button:hover{background:#8f4d27}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;max-width:90vw;box-shadow:0 14px 34px -10px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.3s;z-index:80;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -442,7 +447,7 @@
 <section class="screen" id="s-drill">
   <div class="wrap">
     <div class="ctx-bar">
-      <button class="back" onclick="show('s-dash')">← 대시보드</button>
+      <button class="back" onclick="show('s-dash')" data-ko="← 대시보드" data-en="← Dashboard">← 대시보드</button>
       <span class="ctx-spacer"></span>
     </div>
     <div id="drillSlot"></div>
@@ -454,9 +459,9 @@
 <section class="screen" id="s-report">
   <div class="wrap">
     <div class="ctx-bar no-print">
-      <button class="back" onclick="show('s-dash')">← 대시보드</button>
+      <button class="back" onclick="show('s-dash')" data-ko="← 대시보드" data-en="← Dashboard">← 대시보드</button>
       <span class="ctx-spacer"></span>
-      <button class="report-btn" onclick="window.print()">⎙ 인쇄 / PDF 저장</button>
+      <button class="report-btn" onclick="window.print()" data-ko="⎙ 인쇄 / PDF 저장" data-en="⎙ Print / Save PDF">⎙ 인쇄 / PDF 저장</button>
     </div>
     <div id="reportSlot" class="report-doc"></div>
   </div>
@@ -485,7 +490,7 @@
 var STATE = { industry:'반도체', market:'중동·북아프리카(MENA)', depth:'deep', entry:'신규 진입', focus:'', lang:'ko', method:'ai', userData:'' };
 var RESULTS = { ko:null, en:null }; // cached AI results per language
 var LAST_LENS = null;
-function curResult(){ return RESULTS[STATE.lang]; }
+function curResult(){ return RESULTS[STATE.lang] || RESULTS.ko || RESULTS.en; }
 function anyResult(){ return RESULTS.ko || RESULTS.en; }
 
 /* ---- condensed curated references (grounding) ---- */
@@ -537,21 +542,26 @@ function setLang(l){
     if(v!=null) el.placeholder=v;
   });
   updateFoot();updateDepth();
-  // result screens: if an analysis exists, switch body language
+  // result screens: switch body language using cache; offer translate if not yet generated
   if(anyResult()){
-    if(RESULTS[l]){
-      // already generated in this language → instant switch
-      renderAll(RESULTS[l]);
-      if(document.getElementById('s-drill').classList.contains('active') && LAST_LENS){ openLens(LAST_LENS); }
-      else if(document.getElementById('s-report').classList.contains('active')){ buildReport(); }
-    } else if(document.getElementById('s-dash').classList.contains('active') ||
-              document.getElementById('s-drill').classList.contains('active') ||
-              document.getElementById('s-report').classList.contains('active')){
-      // not yet generated in this language → generate it now (one AI call), then show
-      runAnalysis(true);
-    }
+    renderAll(curResult());
+    if(document.getElementById('s-drill').classList.contains('active') && LAST_LENS){ openLens(LAST_LENS); }
+    else if(document.getElementById('s-report').classList.contains('active')){ buildReport(); }
+    updateTranslateBar(l);
   }
   try{ if($('rememberKey').checked) localStorage.setItem('ff_lang',l); }catch(e){}
+}
+/* shows a translate prompt when the body isn't yet in the selected language */
+function updateTranslateBar(l){
+  var bar=document.getElementById('translateBar');
+  if(RESULTS[l]){ if(bar) bar.style.display='none'; return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='translateBar'; bar.className='translate-bar';
+    var dash=document.querySelector('#s-dash .dash-head');
+    if(dash&&dash.parentNode) dash.parentNode.insertBefore(bar,dash);
+  }
+  bar.style.display='flex';
+  bar.innerHTML='<span>'+T('화면 라벨은 바뀌었지만, 분석 본문은 아직 이 언어로 생성되지 않았습니다.','UI labels switched, but the analysis body isn\'t in this language yet.')+'</span>'+
+    '<button onclick="runAnalysis(true)">'+(l==='en'?'Translate (run AI)':'이 언어로 분석')+'</button>';
 }
 $('focusInput').addEventListener('input',function(){STATE.focus=this.value.trim()});
 $('dataPaste') && $('dataPaste').addEventListener('input',function(){STATE.userData=this.value.trim();});
@@ -696,9 +706,11 @@ async function runAnalysis(isRelang){
     var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!res.ok){
       var t=await res.text();
-      show('s-setup');
-      showError('AI 호출 실패 (HTTP '+res.status+')',
-        '키가 올바른지, 모델 이름이 맞는지 확인하세요. 무료 모델명: gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3-flash 중 하나로 바꿔보세요.', t.slice(0,300));
+      var msg=(res.status===429)
+        ? T('무료 사용 한도를 잠시 초과했습니다. 1~2분 뒤 다시 시도하거나 모델을 gemini-2.5-flash-lite로 두세요.','Free quota exceeded for now. Try again in 1–2 min, or use gemini-2.5-flash-lite.')
+        : T('키가 올바른지, 모델 이름이 맞는지 확인하세요. 무료 모델: gemini-2.5-flash-lite / gemini-2.5-flash / gemini-3-flash.','Check your key and model name. Free models: gemini-2.5-flash-lite / gemini-2.5-flash / gemini-3-flash.');
+      if(isRelang){ failRelang(T('AI 호출 실패','AI call failed')+' (HTTP '+res.status+') — '+msg); }
+      else { show('s-setup'); showError(T('AI 호출 실패','AI call failed')+' (HTTP '+res.status+')', msg, t.slice(0,300)); }
       return;
     }
     var data=await res.json();
@@ -713,11 +725,28 @@ async function runAnalysis(isRelang){
     if(!isRelang){ RESULTS={ko:null,en:null}; } // fresh analysis clears old-language cache
     RESULTS[STATE.lang]=parsed;
     renderAll(parsed);
+    if(typeof updateTranslateBar==='function') updateTranslateBar(STATE.lang);
     show('s-dash');
   }catch(err){
-    show('s-setup');
-    showError('분석 처리 중 오류','AI 응답을 해석하지 못했습니다. 다시 시도하거나, 모델을 gemini-2.5-flash-lite 로 바꿔보세요.', String(err));
+    if(isRelang){ failRelang(T('분석 처리 중 오류 — 다시 시도해 주세요.','Processing error — please try again.')); }
+    else { show('s-setup'); showError(T('분석 처리 중 오류','Processing error'),T('AI 응답을 해석하지 못했습니다. 다시 시도하거나 모델을 gemini-2.5-flash-lite로 바꿔보세요.','Could not parse the AI response. Try again or switch to gemini-2.5-flash-lite.'), String(err)); }
   }
+}
+/* language re-gen failed: revert to the language we still have, stay on screen, toast */
+function failRelang(message){
+  var have = RESULTS.ko ? 'ko' : (RESULTS.en ? 'en' : null);
+  if(have){ STATE.lang=have;
+    document.querySelectorAll('.lang-toggle .lt').forEach(function(b){b.classList.toggle('sel',b.dataset.v===have);});
+    document.querySelectorAll('[data-ko]').forEach(function(el){var v=(have==='en')?el.getAttribute('data-en'):el.getAttribute('data-ko');if(v!=null)el.textContent=v;});
+    renderAll(RESULTS[have]);
+  }
+  show('s-dash');
+  toast(message);
+}
+function toast(msg){
+  var t=document.getElementById('toast'); if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._toastT); window._toastT=setTimeout(function(){t.classList.remove('show');},6000);
 }
 
 function showError(title,msg,detail){
@@ -935,7 +964,7 @@ function buildReport(){
     '<h2>'+T('3. 기회 & 리스크','3. Opportunity & Risk')+'</h2>'+lensList('opportunity')+rev+
     '<h2>'+T('4. 경쟁사 현황','4. Competitive Landscape')+'</h2>'+lensList('competition')+
     '<h2>'+T('5. 진입 전략','5. Entry Strategy')+'</h2>'+lensList('strategy')+
-    '<h2>'+T('6. 실행 To-do','6. Action To-do')+'</h2>'+
+    '<h2>'+T('6. 실행방안 To-Do List','6. Action Plan To-Do List')+'</h2>'+
     '<table><thead><tr><th>'+T('구분','Area')+'</th><th>'+T('할 일','Task')+'</th><th>'+T('우선','Pri.')+'</th><th>'+T('기간','Dur.')+'</th></tr></thead><tbody>'+todoRows+'</tbody></table>'+
     '<div class="r-foot">'+T('본 리포트는 Frontier Foothold가 AI로 생성한 분석입니다. 참고용이며, 의사결정 전 검증이 필요합니다.','This report was AI-generated by Frontier Foothold. For reference only; verify before deciding.')+'<br>© Frontier Foothold</div>';
   show('s-report');
