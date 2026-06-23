@@ -410,8 +410,8 @@
   <div class="wrap">
     <div class="loading">
       <div class="spin"></div>
-      <div class="lt">AI가 진입 분석을 생성하는 중…</div>
-      <div class="ls">큐레이션 레퍼런스와 입력 조건으로 4개 관점(시장·기회/리스크·경쟁·전략) + 결론 + 실행 To-do를 구성하고 있습니다. 보통 15~40초 걸립니다.</div>
+      <div class="lt" data-ko="AI가 진입 분석을 생성하는 중…" data-en="Generating the entry analysis…">AI가 진입 분석을 생성하는 중…</div>
+      <div class="ls" data-ko="큐레이션 레퍼런스와 입력 조건으로 4개 관점(시장·기회/리스크·경쟁·전략) + 결론 + 실행 To-do를 구성하고 있습니다. 보통 15~40초 걸립니다." data-en="Building four lenses (market, opportunity/risk, competition, strategy) + conclusion + action to-dos from curated references and your inputs. Usually 15–40 seconds.">큐레이션 레퍼런스와 입력 조건으로 4개 관점(시장·기회/리스크·경쟁·전략) + 결론 + 실행 To-do를 구성하고 있습니다. 보통 15~40초 걸립니다.</div>
     </div>
   </div>
 </section>
@@ -483,7 +483,10 @@
 
 /* ---- selection state ---- */
 var STATE = { industry:'반도체', market:'중동·북아프리카(MENA)', depth:'deep', entry:'신규 진입', focus:'', lang:'ko', method:'ai', userData:'' };
-var RESULT = null; // last AI result
+var RESULTS = { ko:null, en:null }; // cached AI results per language
+var LAST_LENS = null;
+function curResult(){ return RESULTS[STATE.lang]; }
+function anyResult(){ return RESULTS.ko || RESULTS.en; }
 
 /* ---- condensed curated references (grounding) ---- */
 /* Deep regions carry real, sourced facts; the prompt tells the model to
@@ -534,8 +537,20 @@ function setLang(l){
     if(v!=null) el.placeholder=v;
   });
   updateFoot();updateDepth();
-  // re-localize result screens if analysis already exists
-  if(RESULT){ renderAll(RESULT); }
+  // result screens: if an analysis exists, switch body language
+  if(anyResult()){
+    if(RESULTS[l]){
+      // already generated in this language → instant switch
+      renderAll(RESULTS[l]);
+      if(document.getElementById('s-drill').classList.contains('active') && LAST_LENS){ openLens(LAST_LENS); }
+      else if(document.getElementById('s-report').classList.contains('active')){ buildReport(); }
+    } else if(document.getElementById('s-dash').classList.contains('active') ||
+              document.getElementById('s-drill').classList.contains('active') ||
+              document.getElementById('s-report').classList.contains('active')){
+      // not yet generated in this language → generate it now (one AI call), then show
+      runAnalysis(true);
+    }
+  }
   try{ if($('rememberKey').checked) localStorage.setItem('ff_lang',l); }catch(e){}
 }
 $('focusInput').addEventListener('input',function(){STATE.focus=this.value.trim()});
@@ -667,7 +682,7 @@ iref,
 }
 
 /* ---- Gemini call ---- */
-async function runAnalysis(){
+async function runAnalysis(isRelang){
   var key=$('apiKey').value.trim();
   var model=$('modelName').value.trim()||'gemini-2.5-flash';
   $('errSlot').innerHTML='';
@@ -695,7 +710,8 @@ async function runAnalysis(){
     var first=clean.indexOf('{'), last=clean.lastIndexOf('}');
     if(first>=0&&last>=0) clean=clean.slice(first,last+1);
     var parsed=JSON.parse(clean);
-    RESULT=parsed;
+    if(!isRelang){ RESULTS={ko:null,en:null}; } // fresh analysis clears old-language cache
+    RESULTS[STATE.lang]=parsed;
     renderAll(parsed);
     show('s-dash');
   }catch(err){
@@ -822,8 +838,9 @@ function renderTodos(todos){
     items;
 }
 function openLens(key){
-  var lens=RESULT&&RESULT.lenses&&RESULT.lenses[key]; var meta=lensMeta(key);
+  var R=curResult(); var lens=R&&R.lenses&&R.lenses[key]; var meta=lensMeta(key);
   if(!lens)return;
+  LAST_LENS=key;
   var blocks=(lens.points||[]).map(function(p,i){
     var ev=p.evidence?('<div class="evidence"><span class="etag">'+T('근거','Evidence')+'</span><div class="ev"><span class="b"></span><div'+
       (/(추론|inference)/i.test(p.evidence)?' class="assume"':'')+'>'+escapeHtml(p.evidence)+'</div></div></div>'):'';
@@ -860,7 +877,7 @@ function boldify(s){return escapeHtml(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}
 function stripBold(s){return escapeHtml(s).replace(/\*\*(.+?)\*\*/g,'$1')}
 
 /* ---- glossary (search-first, from AI result) ---- */
-function glossaryData(){ return (RESULT&&RESULT.glossary)||[]; }
+function glossaryData(){ var R=curResult(); return (R&&R.glossary)||[]; }
 function openGlossary(){
   $('gloss-bg').classList.add('open');$('gloss-modal').classList.add('open');
   $('gloss-search').value='';$('gloss-search').placeholder=T('용어 검색…','Search terms…');
@@ -890,8 +907,8 @@ function pickTerm(enc){var t=decodeURIComponent(enc);$('gloss-search').value=t;r
 
 /* ---- report builder ---- */
 function buildReport(){
-  if(!RESULT){return;}
-  var c=RESULT.conclusion||{}; var L=RESULT.lenses||{}; var todos=RESULT.todos||[];
+  var R=curResult(); if(!R){return;}
+  var c=R.conclusion||{}; var L=R.lenses||{}; var todos=R.todos||[];
   var now=new Date(); var dateStr=now.getFullYear()+'.'+(now.getMonth()+1)+'.'+now.getDate();
   function lensList(key){
     var lens=L[key]; if(!lens)return'';
